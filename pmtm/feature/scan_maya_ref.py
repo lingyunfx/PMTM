@@ -56,8 +56,6 @@ class MayaRefScanUI(CommonToolWidget):
         self.splitter.setStretchFactor(0, 7)
         self.splitter.setStretchFactor(1, 3)
 
-        self.scan_path_line.setText(r'D:\test\reference_test\2023\scenes')  # for test
-
     def connect_command(self):
         self.scan_bt.clicked.connect(self.scan_bt_clicked)
         self.export_bt.clicked.connect(self.export_bt_clicked)
