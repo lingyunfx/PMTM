@@ -1,30 +1,19 @@
 import os
 import tempfile
+import traceback
 from functools import partial
 
 import openpyxl
 from openpyxl.drawing.image import Image
 from openpyxl.styles import Font, colors, Alignment
 import dayu_widgets as dy
-from PySide2 import QtWidgets, QtCore, QtGui
+from PySide2 import QtWidgets, QtCore
 
 from pmtm.core import logger, user_setting
 from pmtm.common_widgets import CommonToolWidget, DropTabelView, message_box
 from pmtm.helper import (get_frame_count, extract_thumbnail_from_mov, extract_audio_from_mov,
                          get_image_resolution, get_file_rate, get_file_codex, get_file_resolution,
-                         get_file_colorspace, scan_files)
-
-
-def g_pixmap(name, y):
-    """
-    用于缩略图显示
-    """
-    img = y.get('image')
-    image_w = 192
-    image_h = 108
-    result = QtGui.QPixmap(img)
-    result = result.scaled(image_w, image_h, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-    return result
+                         get_file_colorspace, scan_files, g_pixmap)
 
 
 # 如果要添加Header，需要在下面的data也添加对应的数据获取方式，定位 if_add_header_list
@@ -109,13 +98,23 @@ class ScanMovieDataUI(CommonToolWidget):
         self.drop_to_table_function(_list=files_list)
 
     def export_excel_bt_clicked(self):
+        logger.debug('点击导出表格按钮')
+
+        # 获取保存路径
         export_file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Export xlsx', '', 'XLSX Files(*.xlsx)')
         if not export_file_path:
             return
 
+        # 获取数据列表
         data_list = self.model.get_data_list()
+        if not data_list:
+            dy.MToast(text='没有数据',
+                      duration=3.0,
+                      dayu_type='warning',
+                      parent=self).show()
+            return
 
-        # 导出表格任务
+        # 开始导出任务
         task = ExportXLSXTask(data_list=data_list,
                               output_path=export_file_path,
                               parent=self)
@@ -123,15 +122,26 @@ class ScanMovieDataUI(CommonToolWidget):
         task.start()
 
     def export_audio_bt_clicked(self):
+        logger.debug('点击导出音频按钮')
+
+        # 获取保存路径
         export_folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, 'Export audio', '')
         if not export_folder_path:
             return
 
+        # 获取数据列表
         data_list = self.model.get_data_list()
-        # 导出音频对话框
+        if not data_list:
+            dy.MToast(text='没有数据',
+                      duration=3.0,
+                      dayu_type='warning',
+                      parent=self).show()
+            return
+
+        # 创建导出进度对话框
         dialog = ExportAudioDialog(parent=self)
 
-        # 导出音频任务
+        # 开始导出任务
         task = ExportAudioTask(data_list=data_list,
                                output_folder=export_folder_path,
                                parent=self)
@@ -139,10 +149,12 @@ class ScanMovieDataUI(CommonToolWidget):
         task.finished.connect(dialog.show_success)
         task.start()
 
-        # 显示对话框
+        # 显示进度对话框
         dialog.exec_()
 
     def clean_bt_clicked(self):
+        logger.debug('点击清空按钮')
+
         self.model.clear()
         self.total = 0
         self.total_frame = 0
@@ -186,7 +198,7 @@ class ScanMovieDataUI(CommonToolWidget):
         self.table_view.resizeRowsToContents()
 
     def disable_all_button(self):
-        for bt in (self.scan_bt, self.export_excel_bt, self.clean_bt):
+        for bt in (self.scan_bt, self.export_excel_bt, self.clean_bt, self.export_audio_bt, self.scan_path_line):
             bt.setEnabled(not bt.isEnabled())
     
     @property
@@ -332,13 +344,20 @@ class ExportXLSXTask(QtCore.QThread):
         self.xls_data = [title]
 
     def run(self):
-        for data in self.data_list:
-            # 缩略图的key实际为image，这里列表排除它，之后添加
-            item_list = [str(data[header['key']]) for header in HEADER_LIST if header['key'] != 'thumbnail']
-            item_list.insert(0, data['image'])
-            self.xls_data.append(item_list)
+        try:
+            for data in self.data_list:
+                # 缩略图的key实际为image，这里列表排除它，之后添加
+                item_list = [str(data[header['key']]) 
+                             for header in HEADER_LIST 
+                             if header['key'] != 'thumbnail']
+                item_list.insert(0, data['image'])
+                self.xls_data.append(item_list)
 
-        self.make_xsl()
+            self.make_xsl()
+
+        except Exception as e:
+            logger.error(f'导出表格失败: {traceback.format_exc()}')
+            return
 
     def make_xsl(self):
         if not self.xls_data:

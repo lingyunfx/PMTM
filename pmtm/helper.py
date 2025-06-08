@@ -1,6 +1,20 @@
 import os
 import subprocess as sp
+
+from PySide2 import QtGui, QtCore
 from pmtm.core import user_setting
+
+
+def g_pixmap(name, y):
+    """
+    用于缩略图显示
+    """
+    img = y.get('image')
+    image_w = 192
+    image_h = 108
+    result = QtGui.QPixmap(img)
+    result = result.scaled(image_w, image_h, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+    return result
 
 
 def scan_files(scan_folder, is_include, ext_list):

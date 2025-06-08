@@ -66,7 +66,6 @@ class MayaFrameScanUI(CommonToolWidget):
         self.add_widgets_v_line(self.tips_bt, self.table_view, self.export_bt)
 
     def adjust_ui(self):
-        self.scan_path_line.setText(r'D:\test\reference_test\2023\scenes')  # for test
         self.tips_bt.setFixedWidth(300)
         self.model.set_header_list(HEADER_LIST)
         self.table_view.setModel(self.model)

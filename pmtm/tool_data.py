@@ -4,6 +4,7 @@ from typing import Callable
 from pmtm.feature.scan_maya_ref import MayaRefScanUI
 from pmtm.feature.scan_maya_frame import MayaFrameScanUI
 from pmtm.feature.scan_movie_data import ScanMovieDataUI
+from pmtm.feature.convert_tool import ConvertToolUI
 
 
 @dataclass
@@ -40,7 +41,7 @@ DATA_LIST = [
              """,
              ),
 
-    ToolData(name='扫描mov视频信息',
+    ToolData(name='扫描视频信息',
              group='',
              icon='./resource/movie.png',
              wiki_url='',
@@ -50,5 +51,14 @@ DATA_LIST = [
              工具会获取视频的'帧数','缩略图','帧数率'等信息，
              可将它导出为一个excel表格/或仅导出音频。
              """,
-             )
+             ),
+    ToolData(name='序列帧/视频互转',
+             group='',
+             icon='./resource/conversion.png',
+             wiki_url='',
+             widget=ConvertToolUI,
+             description="""
+             将序列帧转换为视频，或将视频转换为序列帧。
+             """,
+             ),
 ]
