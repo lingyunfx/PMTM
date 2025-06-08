@@ -16,35 +16,36 @@ class ToolData:
     wiki_url: str
     icon: str
     widget: Callable
+    enable: bool = True
 
 
 DATA_LIST = [
     ToolData(name='Maya Reference扫描',
              group='',
              icon=r'./resource/scan_maya.png',
-             wiki_url='https://lingyunfx.com/maya-replace-ref-tool/',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#1-%E6%89%AB%E6%8F%8F-Maya-Reference',
              widget=MayaRefScanUI,
              description="""
-             扫描目录下的ma文件，获取其所有reference路径。
-              - 导出表格: 将ma文件与其引用了哪些reference导出一个表格
-              - 替换: 为reference替换新的路径（注意:该操作会覆盖原始文件, 替换前请备份！）
+             扫描指定目录下的Maya文件（仅ma格式），获取其引用的reference路径。
+             你可以对reference进行替换操作，也可以将扫描结果导出一个表格。
+             (注意：替换操作会覆盖原始文件，替换前请备份)
              """,
              ),
 
     ToolData(name='扫描Maya文件时间范围',
              group='',
              icon='./resource/frame_range.png',
-             wiki_url='',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#2-%E6%89%AB%E6%8F%8FMaya%E6%96%87%E4%BB%B6%E7%9A%84%E6%97%B6%E9%97%B4%E8%8C%83%E5%9B%B4',
              widget=MayaFrameScanUI,
              description="""
-             该工具可以扫描ma文件，获取其开始帧和结束帧，然后将结果导出一个表格。
+             扫描指定目录下的Maya文件（仅ma格式），获取其开始帧和结束帧，然后将结果导出一个表格。
              """,
              ),
 
     ToolData(name='扫描视频信息',
              group='',
              icon='./resource/movie.png',
-             wiki_url='',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#3-%E6%89%AB%E6%8F%8F%E8%A7%86%E9%A2%91%E4%BF%A1%E6%81%AF',
              widget=ScanMovieDataUI,
              description="""
              扫描指定文件夹下的mov或mp4视频，也可以直接将文件拖拽到Table窗口中。
@@ -60,5 +61,6 @@ DATA_LIST = [
              description="""
              将序列帧转换为视频，或将视频转换为序列帧。
              """,
+             enable=False,
              ),
 ]

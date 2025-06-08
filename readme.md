@@ -26,9 +26,19 @@ pip install -r requirements.txt
 ```
 
 ### 第三方库修改
-为了在表格中显示图片，这里有在 dayu_widgets.utils.line:340 后添加
+为了在表格中显示图片，这里有在 `dayu_widgets.utils.line:340` 后添加
 ```python
 @icon_formatter.register(QtGui.QPixmap)
 def _(input_object):
     return input_object
+```
+
+为了打包后找到资源文件，修改了 `dayu_widgets.__init__` 中的静态文件目录
+```python
+DEFAULT_STATIC_FOLDER = './resource'
+```
+
+### 打包
+```shell
+pyinstaller main.py -i app.ico --hidden-import=PySide2 --hidden-import=PySide2.QtSvg --onefile -p .
 ```
