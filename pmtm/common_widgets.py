@@ -250,11 +250,11 @@ class PhotoLabel(QtWidgets.QDialog):
     显示一张图片的label
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, image_path, parent=None):
         super(PhotoLabel, self).__init__(parent=parent)
         main_layout = QtWidgets.QHBoxLayout()
-        image_path = get_image_path('maya_playback_tips.jpg')
         label = QtWidgets.QLabel()
         label.setPixmap(QtGui.QPixmap(image_path))
         main_layout.addWidget(label)
+        self.setWindowTitle('图片')
         self.setLayout(main_layout)

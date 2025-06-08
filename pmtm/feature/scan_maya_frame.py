@@ -7,7 +7,7 @@ import dayu_widgets as dy
 from PySide2 import QtWidgets, QtGui
 
 from pmtm.common_widgets import CommonToolWidget, PhotoLabel
-from pmtm.helper import scan_files
+from pmtm.helper import scan_files, get_image_path
 from pmtm.core import logger
 
 
@@ -130,7 +130,7 @@ class MayaFrameScanUI(CommonToolWidget):
                   parent=self).show()
 
     def tips_bt_clicked(self):
-        tips = PhotoLabel(parent=self)
+        tips = PhotoLabel(get_image_path('maya_playback_tips.jpg'), parent=self)
         tips.exec_()
 
     def scan_file_time_range(self, file_path):

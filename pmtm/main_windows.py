@@ -9,7 +9,7 @@ from pmtm.common_widgets import CommonWidget
 from pmtm.tool_data import DATA_LIST
 from pmtm.settings_dialog import SettingDialog
 from pmtm import constant as const
-from pmtm.core import user_setting
+from pmtm.core import user_setting, get_log_file_path
 
 
 
@@ -94,6 +94,8 @@ class MainWindow(CommonWidget):
         """
         model = QtGui.QStandardItemModel()
         for item in DATA_LIST:
+            if not item.enable:
+                continue
             kwargs = {'title': item.name,
                       'description': item.description,
                       'wiki_url': item.wiki_url,
@@ -107,6 +109,7 @@ class MainWindow(CommonWidget):
     def connect_command(self):
         self.left_widget.switch_theme_bt.clicked.connect(self.switch_theme_bt_clicked)
         self.left_widget.setting_bt.clicked.connect(self.setting_bt_clicked)
+        self.left_widget.log_bt.clicked.connect(self.log_bt_clicked)
         self.left_widget.list_view.clicked.connect(
             lambda index: self.stack.setCurrentIndex(index.row())
         )
@@ -120,6 +123,10 @@ class MainWindow(CommonWidget):
         theme = dy.MTheme(theme_color)
         theme.apply(self)
         user_setting.set('theme', theme_color)
+    
+    def log_bt_clicked(self):
+        # 打开日志文件
+        os.startfile(get_log_file_path())
 
     def setting_bt_clicked(self):
         dialog = SettingDialog(parent=self)
