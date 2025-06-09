@@ -65,8 +65,8 @@ class MainWindow(CommonWidget):
         self.stack = QtWidgets.QStackedWidget(parent=self)
 
         self.init_ui()
-        self.adjust_ui()
         self.set_data()
+        self.adjust_ui()
         self.connect_command()
 
     def init_ui(self):
@@ -82,6 +82,12 @@ class MainWindow(CommonWidget):
         current_user_theme = user_setting.get('theme', 'light')
         theme = dy.MTheme(current_user_theme)
         theme.apply(self)
+
+        # TODO Fix 无法影响的控件处理
+        theme.apply(self.stack.widget(3).scan_format_cb)
+        theme.apply(self.stack.widget(3).output_format_cb)
+        theme.apply(self.stack.widget(3).keyword_type_cb)
+        theme.apply(self.stack.widget(3).fps_cb)
         
         # 设置窗口大小
         width = user_setting.get('window_width', 1100)
@@ -120,9 +126,16 @@ class MainWindow(CommonWidget):
         theme_color = 'light' if theme_color == 'dark' else 'dark'
         self.left_widget.switch_theme_bt.setIcon(MIcon(fr'./resource/{theme_color}.png'))
 
+        # 设置主题
         theme = dy.MTheme(theme_color)
         theme.apply(self)
         user_setting.set('theme', theme_color)
+
+        # TODO Fix 无法影响的控件处理
+        theme.apply(self.stack.widget(3).scan_format_cb)
+        theme.apply(self.stack.widget(3).output_format_cb)
+        theme.apply(self.stack.widget(3).keyword_type_cb)
+        theme.apply(self.stack.widget(3).fps_cb)
     
     def log_bt_clicked(self):
         # 打开日志文件
