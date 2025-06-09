@@ -76,7 +76,7 @@ class MainWindow(CommonWidget):
     def adjust_ui(self):
         # 设置窗口标题和图标
         self.setWindowTitle(f'{const.WINDOW_TITLE} {const.VERSION}')
-        self.setWindowIcon(QtGui.QIcon('./resource/app.png'))
+        self.setWindowIcon(QtGui.QIcon('./resource/app_icon.png'))
 
         # 设置主题
         current_user_theme = user_setting.get('theme', 'light')

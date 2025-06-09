@@ -11,21 +11,22 @@ from PySide2 import QtWidgets, QtCore
 
 from pmtm.core import logger, user_setting
 from pmtm.common_widgets import CommonToolWidget, DropTabelView, message_box
-from pmtm.helper import (get_frame_count, extract_thumbnail_from_mov, extract_audio_from_mov,
-                         get_image_resolution, get_file_rate, get_file_codex, get_file_resolution,
-                         get_file_colorspace, scan_files, g_pixmap)
+from pmtm.helper import g_pixmap, scan_files
+from pmtm.media_utils import (get_video_frame_count, extract_thumbnail_from_mov, extract_audio_from_mov,
+                              get_image_resolution, get_video_rate, get_video_codex, get_video_resolution,
+                              get_video_colorspace)
 
 
 # 如果要添加Header，需要在下面的data也添加对应的数据获取方式，定位 if_add_header_list
 HEADER_LIST = [
             {'label': '缩略图', 'key': 'thumbnail', 'icon': g_pixmap},
-            {'label': '文件名', 'key': 'shot_name', 'order': 0},
-            {'label': '帧数', 'key': 'shot_frame_count', 'align': 'center'},
-            {'label': '帧数率', 'key': 'shot_fps', 'align': 'center'},
-            {'label': '分辨率', 'key': 'shot_res', 'align': 'center'},
-            {'label': '编码', 'key': 'shot_codec', 'align': 'center'},
-            {'label': '色彩空间', 'key': 'shot_colorspace', 'align': 'center'},
-            {'label': '文件路径', 'key': 'source_path'}
+            {'label': '文件名', 'key': 'file_name', 'order': 0},
+            {'label': '帧数', 'key': 'frame_count', 'align': 'center'},
+            {'label': '帧数率', 'key': 'fps', 'align': 'center'},
+            {'label': '分辨率', 'key': 'resolution', 'align': 'center'},
+            {'label': '编码', 'key': 'codec', 'align': 'center'},
+            {'label': '色彩空间', 'key': 'colorspace', 'align': 'center'},
+            {'label': '文件路径', 'key': 'file_path'}
         ]
 
 
@@ -236,19 +237,19 @@ class GetMDataTask(QtCore.QThread):
         self.files_list = files_list
 
     def run(self):
-        for source_path in self.files_list:
-            self.data_from_file(source_path=source_path)
+        for file_path in self.files_list:
+            self.data_from_file(file_path=file_path)
             self.parent().total += 1
 
-    def data_from_file(self, source_path):
+    def data_from_file(self, file_path):
         """
         从文件中获取数据
         """
-        file_name = os.path.basename(source_path)
+        file_name = os.path.basename(file_path)
         real_name, ext = os.path.splitext(file_name)
 
         if ext not in ['.mov', '.MOV', '.mp4', '.MP4']:
-            msg = dy.MMessage(text=f'不支持的文件: {source_path}',
+            msg = dy.MMessage(text=f'不支持的文件: {file_path}',
                               duration=3.0,
                               dayu_type='warning',
                               parent=self.parent())
@@ -258,24 +259,24 @@ class GetMDataTask(QtCore.QThread):
         # 输出一个缩略图
         temp_dir = tempfile.mkdtemp()
         thumbnail_path = os.path.join(temp_dir, 'thumbnail.jpg')
-        extract_thumbnail_from_mov(mov_file=source_path,
+        extract_thumbnail_from_mov(mov_file=file_path,
                                    output_image_file=thumbnail_path)
         image_w, image_h = get_image_resolution(thumbnail_path)
 
         # if_add_header_list
-        data = {'shot_name': real_name,
-                'shot_frame_count': get_frame_count(source_path),
-                'shot_fps': get_file_rate(source_path),
-                'shot_res': get_file_resolution(source_path),
-                'shot_codec': get_file_codex(source_path),
-                'shot_colorspace': get_file_colorspace(source_path),
+        data = {'file_name': real_name,
+                'frame_count': get_video_frame_count(file_path),
+                'fps': get_video_rate(file_path),
+                'resolution': get_video_resolution(file_path),
+                'codec': get_video_codex(file_path),
+                'colorspace': get_video_colorspace(file_path),
                 'image': thumbnail_path,
                 'image_w': image_w,
                 'image_h': image_h,
-                'source_path': source_path,
+                'file_path': file_path,
                 'thumbnail': ''
                 }
-        self.parent().total_frame += data.get('shot_frame_count', 0)
+        self.parent().total_frame += data.get('frame_count', 0)
         self.data_sig.emit(data)
 
 
@@ -299,8 +300,8 @@ class ExportAudioDialog(QtWidgets.QDialog):
         self.setWindowTitle('进度显示')
 
     def show_progress(self, progress_data_list):
-        shot_name, current, total = progress_data_list
-        self.tips_label.setText(f'正在导出: {current}/{total} {shot_name}')
+        file_name, current, total = progress_data_list
+        self.tips_label.setText(f'正在导出: {current}/{total} {file_name}')
         self.progress.setValue(int(current / total * 100))
 
     def show_success(self):
@@ -326,9 +327,9 @@ class ExportAudioTask(QtCore.QThread):
         total = len(self.data_list)
 
         for data in self.data_list:
-            self.progress_sig.emit([data['shot_name'], current, total])
-            wav_path = os.path.join(self.output_folder, f'{data["shot_name"]}.wav')
-            extract_audio_from_mov(mov_file=data['source_path'], output_audio_file=wav_path)
+            self.progress_sig.emit([data['file_name'], current, total])
+            wav_path = os.path.join(self.output_folder, f'{data["file_name"]}.wav')
+            extract_audio_from_mov(mov_file=data['file_path'], output_audio_file=wav_path)
             current += 1
 
 
