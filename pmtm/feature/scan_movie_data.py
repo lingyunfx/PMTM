@@ -125,6 +125,10 @@ class ScanMovieDataUI(CommonToolWidget):
     def export_audio_bt_clicked(self):
         logger.debug('点击导出音频按钮')
 
+        # 检查依赖软件
+        if not self.task_before_check():
+            return
+
         # 获取保存路径
         export_folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, 'Export audio', '')
         if not export_folder_path:
@@ -160,7 +164,7 @@ class ScanMovieDataUI(CommonToolWidget):
         self.total = 0
         self.total_frame = 0
 
-    def scan_before_check(self):
+    def task_before_check(self):
         """
         检查依赖软件
         """
@@ -178,7 +182,7 @@ class ScanMovieDataUI(CommonToolWidget):
 
     def drop_to_table_function(self, _list):
         # 检查依赖软件
-        if not self.scan_before_check():
+        if not self.task_before_check():
             return
 
         # 禁用按钮

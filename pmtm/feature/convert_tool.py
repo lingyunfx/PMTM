@@ -100,8 +100,13 @@ class ConvertToolUI(CommonToolWidget):
     def scan_bt_clicked(self):
         logger.debug(f'扫描按钮点击')
 
+        # 检查依赖软件
+        if not self.task_before_check():
+            return
+
         # 清空数据
         self.model.clear()
+        self.progress_bar.setValue(0)
 
         # 收集扫描参数
         scan_folder = self.scan_path_line.text()
@@ -138,6 +143,10 @@ class ConvertToolUI(CommonToolWidget):
         self.scan_task.start()
 
     def run_convert_bt_clicked(self):
+        # 检查依赖软件
+        if not self.task_before_check():
+            return
+
         # 询问用户确认转换，避免重复误点
         if not question_box(text='是否开始格式转换？',
                             parent=self):
@@ -222,6 +231,22 @@ class ConvertToolUI(CommonToolWidget):
                   self.output_format_cb, self.run_convert_bt
                   ):
             w.setEnabled(not freezed)
+    
+    def task_before_check(self):
+        """
+        检查依赖软件
+        """
+        ffmpeg = user_setting.get('ffmpeg')
+        ffprobe = user_setting.get('ffprobe')
+        magick = user_setting.get('magick')
+
+        if not all([ffmpeg, ffprobe, magick]):
+            dy.MToast(text='请先设置依赖软件路径',
+                      duration=3.0,
+                      dayu_type='error',
+                      parent=self).show()
+            return False
+        return True
     
     @property
     def input_ext(self):
