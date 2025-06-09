@@ -38,6 +38,17 @@ def _(input_object):
 DEFAULT_STATIC_FOLDER = './resource'
 ```
 
+为实现扫描文件时满足多个条件，修改了 `dayu_path.base.DayuPath.scan` 函数
+```python
+avaliable_files = all_files
+if regex_pattern:
+    avaliable_files = (f for f in avaliable_files if (compiled_regex.match(f)))
+if ext_filters:
+    avaliable_files = (f for f in avaliable_files if f.lower().endswith(ext_filters))
+if function_filter:
+    avaliable_files = (f for f in avaliable_files if function_filter(f))
+```
+
 ### 打包
 ```shell
 pyinstaller main.py -i app.ico --hidden-import=PySide2 --hidden-import=PySide2.QtSvg --onefile -p .
