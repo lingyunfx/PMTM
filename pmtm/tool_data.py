@@ -56,7 +56,7 @@ DATA_LIST = [
     ToolData(name='序列帧/视频互转',
              group='',
              icon='./resource/conversion.png',
-             wiki_url='',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#4-%E5%BA%8F%E5%88%97%E5%B8%A7-%E8%A7%86%E9%A2%91%E4%BA%92%E8%BD%AC',
              widget=ConvertToolUI,
              description="""
              可以将视频转换为序列帧，或者将序列帧转换为视频。
