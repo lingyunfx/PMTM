@@ -51,7 +51,7 @@ class ConvertToolUI(CommonToolWidget):
         self.output_path_line = dy.MLineEdit().folder().small()
         self.run_convert_bt = dy.MPushButton('开始转换').small().primary()
         self.start_frame_box = dy.MSpinBox().small()
-        self.fps_box = dy.MComboBox().small()
+        self.fps_cb = dy.MComboBox().small()
 
         self.setup()
     
@@ -61,7 +61,7 @@ class ConvertToolUI(CommonToolWidget):
                                 self.include_ck, stretch=True)
         self.add_widgets_h_line(dy.MLabel('扫描路径'), self.scan_path_line, self.scan_bt)
         self.add_widgets_v_line(self.table_view)
-        self.add_widgets_h_line(dy.MLabel('输出选项'), dy.MLabel('帧率'), self.fps_box,
+        self.add_widgets_h_line(dy.MLabel('输出选项'), dy.MLabel('帧率'), self.fps_cb,
                                 dy.MLabel('图片序列起始帧'), self.start_frame_box,
                                 dy.MLabel('输出格式'), self.output_format_cb, stretch=True)
         self.add_widgets_h_line(dy.MLabel('输出路径'), self.output_path_line)
@@ -76,9 +76,9 @@ class ConvertToolUI(CommonToolWidget):
         self.scan_format_cb.addItems(SUPPORT_FRAME_LIST + SUPPORT_VIDEO_LIST)
         self.output_format_cb.addItems(SUPPORT_FRAME_LIST + SUPPORT_VIDEO_LIST)
 
-        self.fps_box.addItems(['23.976', '24', '25', '29.97', '30'])
-        self.fps_box.setCurrentText('25')
-        self.fps_box.setFixedWidth(70)
+        self.fps_cb.addItems(['23.976', '24', '25', '29.97', '30'])
+        self.fps_cb.setCurrentText('25')
+        self.fps_cb.setFixedWidth(70)
         self.start_frame_box.setSuffix('帧')
         self.start_frame_box.setRange(1, 1000000000)
         self.start_frame_box.setValue(1001)
@@ -167,7 +167,7 @@ class ConvertToolUI(CommonToolWidget):
         output_settings = {
             'convert_method': convert_method,
             'output_ext': self.output_ext,
-            'fps': self.fps_box.currentText(),
+            'fps': self.fps_cb.currentText(),
             'start_frame': self.start_frame_box.value()
         }
 
@@ -227,7 +227,7 @@ class ConvertToolUI(CommonToolWidget):
     
     def set_ui_status(self, freezed=False):
         for w in (self.scan_path_line, self.scan_bt, self.scan_format_cb, self.output_format_cb, self.keyword_line,
-                  self.keyword_type_cb, self.include_ck, self.output_path_line, self.fps_box, self.start_frame_box,
+                  self.keyword_type_cb, self.include_ck, self.output_path_line, self.fps_cb, self.start_frame_box,
                   self.output_format_cb, self.run_convert_bt
                   ):
             w.setEnabled(not freezed)
