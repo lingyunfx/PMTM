@@ -1,5 +1,6 @@
 import subprocess as sp
 from pmtm.core import user_setting, logger
+from pmtm.helper import get_resource_file
 
 
 # -----------------------图像处理--------------------------------
@@ -33,6 +34,27 @@ def extract_thumbnail_from_image(image_file, output_image_file):
     """
     magick = user_setting.get('magick')
     cmd = f'"{magick}" convert "{image_file}" -thumbnail 192x108 "{output_image_file}"'
+    logger.debug(f'执行命令: {cmd}')
+    sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+
+
+def run_collage_images(image_files, output_image_file, horizontal_count, vertical_count):
+    """
+    将图片拼接为一张图片
+    """
+    magick = user_setting.get('magick')
+    cmd = f'"{magick}" montage {" ".join(image_files)} -tile {horizontal_count}x{vertical_count} -geometry +0+0 -background black "{output_image_file}"'
+    logger.debug(f'执行命令: {cmd}')
+    sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+
+
+def run_add_text_to_image(image_file, output_image_file, text, color, size):
+    """
+    为图片添加文字，文字在图片底部中心位置
+    """
+    magick = user_setting.get('magick')
+    font_file = get_resource_file('msyh.ttf')
+    cmd = f'"{magick}" convert "{image_file}" -font {font_file} -gravity South -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -font "{font_file}" "{output_image_file}"'
     logger.debug(f'执行命令: {cmd}')
     sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 

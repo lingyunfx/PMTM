@@ -11,7 +11,7 @@ from PySide2 import QtWidgets, QtCore
 
 from pmtm.core import logger, user_setting
 from pmtm.common_widgets import CommonToolWidget, DropTabelView, message_box
-from pmtm.helper import g_pixmap, scan_files
+from pmtm.helper import g_pixmap, scan_files, check_depend_tool_exist, open_file, open_folder
 from pmtm.media_utils import (get_video_frame_count, extract_thumbnail_from_mov, extract_audio_from_mov,
                               get_image_resolution, get_video_rate, get_video_codex, get_video_resolution,
                               get_video_colorspace)
@@ -125,7 +125,7 @@ class ScanMovieDataUI(CommonToolWidget):
     def export_audio_bt_clicked(self):
         logger.debug('点击导出音频按钮')
 
-        # 检查依赖软件
+        # 任务前检查
         if not self.task_before_check():
             return
 
@@ -168,12 +168,8 @@ class ScanMovieDataUI(CommonToolWidget):
         """
         检查依赖软件
         """
-        ffmpeg = user_setting.get('ffmpeg')
-        ffprobe = user_setting.get('ffprobe')
-        magick = user_setting.get('magick')
-
-        if not all([ffmpeg, ffprobe, magick]):
-            dy.MToast(text='请先设置依赖软件路径',
+        if not check_depend_tool_exist():
+            dy.MToast(text='请设置依赖软件路径',
                       duration=3.0,
                       dayu_type='error',
                       parent=self).show()
@@ -181,7 +177,7 @@ class ScanMovieDataUI(CommonToolWidget):
         return True
 
     def drop_to_table_function(self, _list):
-        # 检查依赖软件
+        # 任务前检查
         if not self.task_before_check():
             return
 

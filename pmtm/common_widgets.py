@@ -7,7 +7,7 @@ from PySide2 import QtWidgets, QtCore, QtGui
 from dayu_widgets.qt import MIcon
 
 from pmtm.core import logger
-from pmtm.helper import get_image_path
+from pmtm.helper import get_resource_file
 
 
 class WidgetMixin(object):
@@ -215,6 +215,40 @@ class ListWidgetWithLabel(CommonWidget):
         lay = self.add_widgets_v_line(self.label, self.widget)
         lay.setSpacing(0)
         self.setLayout(self.main_layout)
+
+
+class MenuPushButton(dy.MPushButton):
+    """
+    类似下拉菜单的按钮控件
+    """
+
+    menu_selected_signal = QtCore.Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.button_list = []
+        self.menu = dy.MMenu(parent=self)
+        self.setMenu(self.menu)
+        self.menu_selected_signal.connect(self.change_button_name)
+
+    def set_menus(self, m_list, icon=None):
+        self.menu.clear()
+        self.button_list = []
+
+        if icon:
+            self.button.setIcon(dy.qt.MIcon(icon, "#ddd"))
+        for m in m_list:
+            self.button_list.append(m)
+            action = QtWidgets.QAction(m, self.menu)
+            action.triggered.connect(partial(self.menu_selected_signal.emit, m))
+            if m_list.index(m) == 0:
+                action.triggered.emit()
+            self.menu.addAction(action)
+
+    def change_button_name(self, name):
+        self.setText(name)
+        self.setFocusPolicy(QtCore.Qt.NoFocus)
 
 
 def message_box(text, success=True, parent=None):
