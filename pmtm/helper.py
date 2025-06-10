@@ -1,5 +1,8 @@
 import os
+import subprocess as sp
+
 from PySide2 import QtGui, QtCore
+from pmtm.core import user_setting
 
 
 def g_pixmap(name, y):
@@ -34,5 +37,33 @@ def scan_files(scan_folder, is_include, ext_list):
     return file_list
 
 
-def get_image_path(name):
+def get_resource_file(name):
     return os.path.join('./resource', name)
+
+
+def check_depend_tool_exist():
+    """
+    检查依赖软件
+    """
+    ffmpeg = user_setting.get('ffmpeg')
+    ffprobe = user_setting.get('ffprobe')
+    magick = user_setting.get('magick')
+
+    for tool in (ffmpeg, ffprobe, magick):
+        if not tool or not tool.endswith('.exe'):
+            return False
+    return True
+
+
+def open_folder(path):
+    """
+    从资源管理器打开文件夹
+    """
+    sp.Popen(['explorer.exe', path])
+
+
+def open_file(path):
+    """
+    调用默认程序打开文件
+    """
+    os.startfile(path)

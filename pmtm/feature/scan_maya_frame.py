@@ -4,41 +4,21 @@ import os
 import traceback
 
 import dayu_widgets as dy
-from PySide2 import QtWidgets, QtGui
+from PySide2 import QtWidgets, QtGui, QtCore
 
 from pmtm.common_widgets import CommonToolWidget, PhotoLabel
-from pmtm.helper import scan_files, get_image_path
+from pmtm.helper import scan_files, get_resource_file, open_file
 from pmtm.core import logger
 
 
 HEADER_LIST = [
-    {
-        'label': '文件名',
-        'key': 'file_name'
-    },
-    {
-        'label': '动画开始帧(ast)',
-        'key': 'start_frame'
-    },
-    {
-        'label': '动画结束帧(aet)',
-        'key': 'end_frame',
-        'width': 100,
-    },
-    {
-        'label': '播放起始帧(min)',
-        'key': 'min_frame',
-        'width': 200,
-    },
-    {
-        'label': '播放结束帧(max)',
-        'key': 'max_frame'
-    },
-    {
-        'label': '路径',
-        'key': 'file_path'
-    }
-]
+    {'label': '文件名', 'key': 'file_name'},
+    {'label': '动画开始帧(ast)', 'key': 'start_frame'},
+    {'label': '动画结束帧(aet)', 'key': 'end_frame', 'width': 100},
+    {'label': '播放起始帧(min)', 'key': 'min_frame', 'width': 200},
+    {'label': '播放结束帧(max)', 'key': 'max_frame'},
+    {'label': '路径', 'key': 'file_path', 'width': 1000}
+    ]
 
 
 class MayaFrameScanUI(CommonToolWidget):
@@ -47,8 +27,6 @@ class MayaFrameScanUI(CommonToolWidget):
         super().__init__(**kwargs)
 
         # data
-        self.ok_count = 0
-        self.error_count = 0
         self.model = dy.MTableModel()
 
         # widgets
@@ -58,17 +36,24 @@ class MayaFrameScanUI(CommonToolWidget):
         self.include_ck = dy.MCheckBox('包括子目录')
         self.table_view = dy.MTableView(size=dy.dayu_theme.small, show_row_count=True)
         self.export_bt = dy.MPushButton('导出表格').primary().small()
+        self.after_task_open_ck = dy.MCheckBox('任务完成后打开表格')
+        self.total_count_label = dy.MLabel('扫描总数: 0')
+        self.error_count_label = dy.MLabel('错误: 0')
 
         self.setup()
 
     def init_ui(self):
         self.add_widgets_h_line(dy.MLabel('路径'), self.scan_path_line, self.scan_bt, self.include_ck)
-        self.add_widgets_v_line(self.tips_bt, self.table_view, self.export_bt)
+        self.add_widgets_v_line(self.tips_bt, self.table_view)
+        self.add_widgets_h_line(self.total_count_label, self.error_count_label, stretch=True)
+        self.add_widgets_h_line(self.export_bt, self.after_task_open_ck)
 
     def adjust_ui(self):
         self.tips_bt.setFixedWidth(300)
         self.model.set_header_list(HEADER_LIST)
         self.table_view.setModel(self.model)
+        self.after_task_open_ck.setChecked(True)
+        self.after_task_open_ck.setFixedWidth(150)
 
     def connect_command(self):
         self.scan_bt.clicked.connect(self.scan_bt_clicked)
@@ -86,21 +71,26 @@ class MayaFrameScanUI(CommonToolWidget):
             return
 
         # 清空数据
+        self.total_count = 0
+        self.error_count = 0
         self.model.clear()
 
-        # 扫描文件
-        logger.info(f'开始扫描文件, 扫描路径: {scan_folder}')
-        files_list = scan_files(scan_folder=scan_folder,
-                                is_include=self.include_ck.isChecked(),
-                                ext_list=['.ma'])
-        logger.info(f'扫描到{len(files_list)}个文件')
+        # 开始任务
+        self.set_ui_status(freezed=True)
+        task = ScanMayaFrameTask(scan_folder=scan_folder,
+                                 is_include=self.include_ck.isChecked(),
+                                 parent=self)
+        task.data_sig.connect(self.add_data_to_table)
+        task.finished.connect(self.set_ui_status)
+        task.start()
+    
+    def add_data_to_table(self, data):
+        self.total_count += 1
 
-        # 获取文件的帧数范围
-        for file_path in files_list:
-            logger.info(f'扫描文件: {file_path}')
-            self.model.append(data_dict=self.scan_file_time_range(file_path=file_path))
+        if data.get('start_frame') == '':
+            self.error_count += 1
 
-        # 自适应表格列宽
+        self.model.append(data)
         self.table_view.header_view._slot_set_resize_mode(True)
 
     def export_bt_clicked(self):
@@ -123,6 +113,10 @@ class MayaFrameScanUI(CommonToolWidget):
                 csv_write.writerow(row)
         logger.info(f'导出完成，文件路径: {export_file_path}')
 
+        # 任务完成后打开表格
+        if self.after_task_open_ck.isChecked():
+            open_file(export_file_path)
+
         # 提示导出完成
         dy.MToast(text='导出完成',
                   dayu_type='success',
@@ -130,9 +124,52 @@ class MayaFrameScanUI(CommonToolWidget):
                   parent=self).show()
 
     def tips_bt_clicked(self):
-        tips = PhotoLabel(get_image_path('maya_playback_tips.jpg'), parent=self)
+        tips = PhotoLabel(get_resource_file('maya_playback_tips.jpg'), parent=self)
         tips.exec_()
+    
+    def set_ui_status(self, freezed=False):
+        for w in (self.scan_path_line, self.scan_bt, self.include_ck, self.export_bt, self.after_task_open_ck):
+            w.setEnabled(not freezed)
+        
+    @property
+    def total_count(self):
+        return int(self.total_count_label.text().split(':')[1])
 
+    @total_count.setter
+    def total_count(self, value):
+        self.total_count_label.setText(f'扫描总数: {value}')
+
+    @property
+    def error_count(self):
+        return int(self.error_count_label.text().split(':')[1])
+    
+    @error_count.setter
+    def error_count(self, value):
+        self.error_count_label.setText(f'错误: {value}')
+
+
+class ScanMayaFrameTask(QtCore.QThread):
+
+    data_sig = QtCore.Signal(dict)
+    
+    def __init__(self, scan_folder, is_include, parent=None):
+        super().__init__(parent=parent)
+
+        self.scan_folder = scan_folder
+        self.is_include = is_include
+
+    def run(self):
+        # 扫描ma文件
+        logger.info(f'开始扫描文件, 扫描路径: {self.scan_folder}')
+        files_list = scan_files(scan_folder=self.scan_folder,
+                                is_include=self.is_include,
+                                ext_list=('.ma'))
+
+        for file_path in files_list:
+            data = self.scan_file_time_range(file_path=file_path)
+            self.data_sig.emit(data)
+            
+    
     def scan_file_time_range(self, file_path):
         """
         通过正则，获取文件的帧数范围，并返回一个字典
@@ -168,7 +205,6 @@ class MayaFrameScanUI(CommonToolWidget):
                 continue
 
         if content is None:
-            self.error_count += 1
             return data_dict
 
         # 从文件内容中获取帧数范围
@@ -186,4 +222,5 @@ class MayaFrameScanUI(CommonToolWidget):
                              'min_frame': result_dict['min'],
                              'max_frame': result_dict['max'],
                              'file_name': os.path.basename(file_path)}
-                return data_dict
+                break
+        return data_dict

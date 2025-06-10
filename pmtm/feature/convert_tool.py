@@ -7,9 +7,9 @@ import dayu_widgets as dy
 from dayu_path import DayuPath
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from pmtm.helper import g_pixmap
+from pmtm.helper import g_pixmap, check_depend_tool_exist
 from pmtm.core import logger, user_setting
-from pmtm.common_widgets import CommonToolWidget, DropTabelView, question_box, message_box
+from pmtm.common_widgets import CommonToolWidget, DropTabelView, MenuPushButton, question_box, message_box
 from pmtm.media_utils import (get_image_resolution, get_video_resolution, get_video_frame_count,
                               extract_thumbnail_from_image, extract_thumbnail_from_mov,
                               convert_seq_to_video, convert_video_to_seq, convert_seq_to_seq,
@@ -26,8 +26,8 @@ HEADER_LIST = [
             {'label': '文件路径', 'key': 'file_path'}
         ]
 
-SUPPORT_FRAME_LIST = ['.png', '.jpg', '.jpeg', '.tif', '.tiff', '.exr', '.dpx', '.tga']
-SUPPORT_VIDEO_LIST = ['.mov', '.mp4']
+SUPPORT_FRAME_LIST = ['png', 'jpg', 'jpeg', 'tif', 'tiff', 'exr', 'dpx', 'tga']
+SUPPORT_VIDEO_LIST = ['mov', 'mp4']
 
 
 class ConvertToolUI(CommonToolWidget):
@@ -41,17 +41,17 @@ class ConvertToolUI(CommonToolWidget):
         # widgets
         self.scan_path_line = dy.MLineEdit().folder().small()
         self.scan_bt = dy.MPushButton('扫描').small().primary()
-        self.scan_format_cb = dy.MComboBox().small()
-        self.output_format_cb = dy.MComboBox().small()
+        self.scan_format_cb = MenuPushButton().small()
+        self.output_format_cb = MenuPushButton().small()
         self.keyword_line = dy.MLineEdit().small()
-        self.keyword_type_cb = dy.MComboBox().small()
+        self.keyword_type_cb = MenuPushButton().small()
         self.include_ck = dy.MCheckBox('包括子目录')
         self.table_view = DropTabelView(show_row_count=True, parent=self)
         self.progress_bar = dy.MProgressBar()
         self.output_path_line = dy.MLineEdit().folder().small()
         self.run_convert_bt = dy.MPushButton('开始转换').small().primary()
         self.start_frame_box = dy.MSpinBox().small()
-        self.fps_cb = dy.MComboBox().small()
+        self.fps_cb = MenuPushButton().small()
 
         self.setup()
     
@@ -71,22 +71,22 @@ class ConvertToolUI(CommonToolWidget):
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         self.keyword_line.setPlaceholderText('输入关键字过滤')
-        self.keyword_type_cb.addItems(['包含', '不包含'])
+        self.keyword_type_cb.set_menus(['包含', '不包含'])
         self.include_ck.setChecked(True)
-        self.scan_format_cb.addItems(SUPPORT_FRAME_LIST + SUPPORT_VIDEO_LIST)
-        self.output_format_cb.addItems(SUPPORT_FRAME_LIST + SUPPORT_VIDEO_LIST)
-
-        self.fps_cb.addItems(['23.976', '24', '25', '29.97', '30'])
-        self.fps_cb.setCurrentText('25')
-        self.fps_cb.setFixedWidth(70)
+        self.scan_format_cb.set_menus(SUPPORT_FRAME_LIST + SUPPORT_VIDEO_LIST)
+        self.output_format_cb.set_menus(SUPPORT_FRAME_LIST + SUPPORT_VIDEO_LIST)
+        self.fps_cb.set_menus(['23.976', '24', '25', '29.97', '30'])
+        self.fps_cb.setText('25')
+        
         self.start_frame_box.setSuffix('帧')
         self.start_frame_box.setRange(1, 1000000000)
         self.start_frame_box.setValue(1001)
 
-        self.scan_format_cb.setFixedWidth(100)
+        self.scan_format_cb.setFixedWidth(70)
         self.keyword_line.setFixedWidth(130)
-        self.output_format_cb.setFixedWidth(100)
+        self.output_format_cb.setFixedWidth(70)
         self.keyword_type_cb.setFixedWidth(100)
+        self.fps_cb.setFixedWidth(50)
 
         self.model.set_header_list(HEADER_LIST)
         self.table_view.setModel(self.model)
@@ -100,8 +100,8 @@ class ConvertToolUI(CommonToolWidget):
     def scan_bt_clicked(self):
         logger.debug(f'扫描按钮点击')
 
-        # 检查依赖软件
-        if not self.task_before_check():
+        # 任务前检查
+        if not self.task_before_check(task_type='scan'):
             return
 
         # 清空数据
@@ -109,11 +109,10 @@ class ConvertToolUI(CommonToolWidget):
         self.progress_bar.setValue(0)
 
         # 收集扫描参数
-        scan_folder = self.scan_path_line.text()
         is_include = self.include_ck.isChecked()
-        ext_tuple = (self.input_ext, self.input_ext.upper())
+        ext_tuple = (f'.{self.input_ext}', f'.{self.input_ext.upper()}')  # 后缀格式包括大写
         keyword = self.keyword_line.text()
-        keyword_type = self.keyword_type_cb.currentText()
+        keyword_type = self.keyword_type_cb.text()
 
         if not keyword:
             function_filter = None
@@ -122,29 +121,23 @@ class ConvertToolUI(CommonToolWidget):
         else:
             function_filter = lambda x: keyword not in x
 
-        # 检查扫描路径
-        if not scan_folder or not os.path.isdir(scan_folder):
-            dy.MToast(text='路径不存在!',
-                      duration=3.0,
-                      dayu_type='error',
-                      parent=self).show()
-            return
-
         # 开始扫描
         self.set_ui_status(freezed=True)
-        self.scan_task = ScanTask(scan_folder=scan_folder,
+        self.task = ScanTask(scan_folder=self.scan_path,
                                   is_include=is_include,
                                   ext_tuple=ext_tuple,
                                   function_filter=function_filter,
                                   parent=self)
-        self.scan_task.data_sig.connect(self.add_data_to_table)
-        self.scan_task.is_success_sig.connect(self.task_finished)
-        self.scan_task.finished.connect(self.set_ui_status)
-        self.scan_task.start()
+        self.task.data_sig.connect(self.add_data_to_table)
+        self.task.is_success_sig.connect(partial(self.task_finished, igrone_success=True))
+        self.task.finished.connect(self.set_ui_status)
+        self.task.start()
 
     def run_convert_bt_clicked(self):
-        # 检查依赖软件
-        if not self.task_before_check():
+        logger.debug(f'开始转换按钮点击')
+
+        # 任务前检查
+        if not self.task_before_check(task_type='convert'):
             return
 
         # 询问用户确认转换，避免重复误点
@@ -167,24 +160,15 @@ class ConvertToolUI(CommonToolWidget):
         output_settings = {
             'convert_method': convert_method,
             'output_ext': self.output_ext,
-            'fps': self.fps_cb.currentText(),
+            'fps': self.fps_cb.text(),
             'start_frame': self.start_frame_box.value()
         }
-
-        # 检查输出路径
-        output_folder = self.output_path_line.text()
-        if not output_folder or not os.path.isdir(output_folder):
-            dy.MToast(text='路径不存在!',
-                      duration=3.0,
-                      dayu_type='error',
-                      parent=self).show()
-            return
         
         # 开始任务
         self.set_ui_status(freezed=True)
         task = ConvertTask(data_list=self.model.get_data_list(),
                            output_settings=output_settings,
-                           output_folder=output_folder,
+                           output_folder=self.output_path,
                            parent=self)
         task.progress_sig.connect(self.progress_bar.setValue)
         task.is_success_sig.connect(self.task_finished)
@@ -217,8 +201,10 @@ class ConvertToolUI(CommonToolWidget):
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()
     
-    def task_finished(self, is_success):
+    def task_finished(self, is_success, igrone_success=False):
         text = '任务完成' if is_success else '任务失败，请检查日志！'
+        if is_success and igrone_success:
+            return
         progress_bar_status = dy.MProgressBar.NormalStatus if is_success else dy.MProgressBar.ErrorStatus
         self.progress_bar.set_dayu_status(progress_bar_status)
         message_box(text=text,
@@ -232,31 +218,54 @@ class ConvertToolUI(CommonToolWidget):
                   ):
             w.setEnabled(not freezed)
     
-    def task_before_check(self):
+    def task_before_check(self, task_type='scan'):
         """
-        检查依赖软件
+        任务前检查
         """
-        ffmpeg = user_setting.get('ffmpeg')
-        ffprobe = user_setting.get('ffprobe')
-        magick = user_setting.get('magick')
-
-        if not all([ffmpeg, ffprobe, magick]):
-            dy.MToast(text='请先设置依赖软件路径',
+        # 检查依赖软件
+        if not check_depend_tool_exist():
+            dy.MToast(text='请设置依赖软件路径',
                       duration=3.0,
                       dayu_type='error',
                       parent=self).show()
             return False
+        
+        # 检查路径
+        if task_type == 'scan':
+            path = self.scan_path
+            text = '请指定扫描目录!'
+        elif task_type == 'convert':
+            path = self.output_path
+            text = '请指定输出目录!'
+        else:
+            return False
+        
+        if not path or not os.path.isdir(path):
+            dy.MToast(text=text,
+                      duration=3.0,
+                      dayu_type='error',
+                      parent=self).show()
+            return False
+        
         return True
     
     @property
     def input_ext(self):
-        return self.scan_format_cb.currentText()
+        return self.scan_format_cb.text()
 
     @property
     def output_ext(self):
-        return self.output_format_cb.currentText()
+        return self.output_format_cb.text()
     
+    @property
+    def scan_path(self):
+        return self.scan_path_line.text()
+    
+    @property
+    def output_path(self):
+        return self.output_path_line.text()
 
+    
 class ScanTask(QtCore.QThread):
     """
     扫描任务类
@@ -282,7 +291,7 @@ class ScanTask(QtCore.QThread):
                                                   function_filter=self.function_filter):
                 
                 logger.debug(f'扫描到文件: {seq_file}')
-                ext = seq_file.ext
+                ext = seq_file.ext[1:].lower()  # 去掉点号 .jpg -> jpg
                 temp_dir = tempfile.mkdtemp()
                 thumbnail_path = os.path.join(temp_dir, 'thumbnail.jpg')
                 file_name = seq_file.stem.stem
@@ -291,13 +300,13 @@ class ScanTask(QtCore.QThread):
                     first_file = seq_file.restore_pattern(seq_file.frames[0])
                     extract_thumbnail_from_image(first_file, thumbnail_path)
                     image_w, image_h = get_image_resolution(first_file)
-                    shot_res = f'{image_w}x{image_h}'
+                    reslolution = f'{image_w}x{image_h}'
                     start_frame = seq_file.frames[0]
                     end_frame = seq_file.frames[-1]
                     frame_count = len(seq_file.frames)
                 elif ext in SUPPORT_VIDEO_LIST:
                     extract_thumbnail_from_mov(seq_file, thumbnail_path)
-                    shot_res = get_video_resolution(seq_file)
+                    reslolution = get_video_resolution(seq_file)
                     start_frame = 1
                     end_frame = get_video_frame_count(seq_file)
                     frame_count = end_frame
@@ -309,10 +318,11 @@ class ScanTask(QtCore.QThread):
                         'start_frame': start_frame,
                         'end_frame': end_frame,
                         'frame_count': frame_count,
-                        'resolution': shot_res,
+                        'resolution': reslolution,
                         'file_path': seq_file,
                         'image': thumbnail_path,
                         'dayu_path': seq_file}
+
                 self.data_sig.emit(data)
                 logger.debug(f'添加数据: {data}')
 
@@ -357,7 +367,7 @@ class ConvertTask(QtCore.QThread):
                 self.progress_sig.emit(current_progress)
 
                 # 获取输出文件路径
-                output_file = os.path.join(self.output_folder, data['file_name'] + output_ext)
+                output_file = os.path.join(self.output_folder, f'{data["file_name"]}.{output_ext}')
 
                 # 根据不同的转换方法，执行不同的函数
                 if convert_method == 'img_to_video':
@@ -397,15 +407,16 @@ class ConvertTask(QtCore.QThread):
         """
         获取序列帧的输出路径格式
         """
-        start_frame = self.output_settings.get('start_frame', 1)
-        output_ext = self.output_settings.get('output_ext', '.mov')
+        start_frame = self.output_settings['start_frame']
+        output_ext = self.output_settings['output_ext']
         frame_count = data['frame_count']
+
         num_len = len(str(start_frame+frame_count))
         if num_len <= 4:
-            output_path = os.path.join(self.output_folder, data['file_name'], f'{data["file_name"]}.%04d{output_ext}')
+            output_path = os.path.join(self.output_folder, data['file_name'], f'{data["file_name"]}.%04d.{output_ext}')
         else:
             num_len = str(num_len).zfill(2)
-            output_path = os.path.join(self.output_folder, data['file_name'], f'{data["file_name"]}.%{num_len}d{output_ext}')
+            output_path = os.path.join(self.output_folder, data['file_name'], f'{data["file_name"]}.%{num_len}d.{output_ext}')
         
         dir_path = os.path.dirname(output_path)
         if not os.path.isdir(dir_path):

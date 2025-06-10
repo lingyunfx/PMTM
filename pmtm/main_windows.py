@@ -82,12 +82,6 @@ class MainWindow(CommonWidget):
         current_user_theme = user_setting.get('theme', 'light')
         theme = dy.MTheme(current_user_theme)
         theme.apply(self)
-
-        # TODO Fix 无法影响的控件处理
-        theme.apply(self.stack.widget(3).scan_format_cb)
-        theme.apply(self.stack.widget(3).output_format_cb)
-        theme.apply(self.stack.widget(3).keyword_type_cb)
-        theme.apply(self.stack.widget(3).fps_cb)
         
         # 设置窗口大小
         width = user_setting.get('window_width', 1100)
@@ -109,8 +103,12 @@ class MainWindow(CommonWidget):
             model.appendRow(QtGui.QStandardItem(QtGui.QIcon(item.icon), item.name))
             self.stack.addWidget(item.widget(**kwargs))
         self.left_widget.list_view.setModel(model)
-        self.left_widget.list_view.setCurrentIndex(model.index(0, 0))
         self.left_widget.list_view.setFocusPolicy(QtCore.Qt.NoFocus)
+
+        # 还原用户最近一次打开的工具界面
+        current_stack_index = user_setting.get('current_stack_index', '0')
+        self.left_widget.list_view.setCurrentIndex(model.index(int(current_stack_index), 0))
+        self.stack.setCurrentIndex(int(current_stack_index))
 
     def connect_command(self):
         self.left_widget.switch_theme_bt.clicked.connect(self.switch_theme_bt_clicked)
@@ -130,12 +128,6 @@ class MainWindow(CommonWidget):
         theme = dy.MTheme(theme_color)
         theme.apply(self)
         user_setting.set('theme', theme_color)
-
-        # TODO Fix 无法影响的控件处理
-        theme.apply(self.stack.widget(3).scan_format_cb)
-        theme.apply(self.stack.widget(3).output_format_cb)
-        theme.apply(self.stack.widget(3).keyword_type_cb)
-        theme.apply(self.stack.widget(3).fps_cb)
     
     def log_bt_clicked(self):
         # 打开日志文件
@@ -153,6 +145,8 @@ class MainWindow(CommonWidget):
             user_setting.set('magick', dialog.magick)
     
     def closeEvent(self, event):
+        # 记录窗口大小和当前选单
         user_setting.set('window_width', self.width())
         user_setting.set('window_height', self.height())
+        user_setting.set('current_stack_index', str(self.stack.currentIndex()))
         event.accept()
