@@ -97,12 +97,19 @@ class MayaRefScanUI(CommonToolWidget):
                                      is_include=self.include_ck.isChecked(),
                                      parent=self)
         task.msg_sig.connect(self.info_board.add_line)
-        task.ref_path_sig.connect(self.ref_list_widget.list.addItem)
-        task.ref_path_sig.connect(lambda x: self.replace_map_list.append({'old_path': x, 'new_path': x}))
+        task.ref_path_sig.connect(self.scan_ref_path_add)
         task.maya_files_sig.connect(self.maya_files.update)
         task.finished.connect(self.set_tool_status)
         task.finished.connect(self.update_maya_tree)
         task.start()
+    
+    def scan_ref_path_add(self, ref_path):
+        exists_path_list = [i.get('old_path') for i in self.replace_map_list]
+        if ref_path in exists_path_list:
+            return
+        self.replace_map_list.append({'old_path': ref_path, 'new_path': ref_path})
+        self.ref_list_widget.list.addItem(ref_path)
+
     
     def search_line_text_changed(self):
         """
