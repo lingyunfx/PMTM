@@ -80,6 +80,7 @@ DATA_LIST = [
              icon='./resource/image_collage.png',
              wiki_url='https://lingyunfx.com/pmtm-doc/#5-%E5%9B%BE%E7%89%87%E6%8B%BC%E5%9B%BE',
              widget=ImageCollageUI,
+             enable=False,
              description="""
              可以将若干图片拼成一整张图片，比如将九张图片拼成一个九宫格。
 
@@ -100,9 +101,10 @@ DATA_LIST = [
 
              【使用方法】
              1.将图片拖拽到Table窗口中
-             2.设置文字内容，颜色，大小
+             2.在表格中，选中条目后右键菜单，设置文字内容，颜色，大小
              3.输出选项中，选择"分别输出"或"拼接成一整张"。然后选择输出的文件格式。
-             3.点击'开始任务'按钮，等待任务完成。
+             4.点击'开始任务'按钮，等待任务完成。
+             （其它选项可以查看帮助文档详细说明）
              """,
              ),
 ]
