@@ -40,7 +40,7 @@ def extract_thumbnail_from_image(image_file, output_image_file):
 
 def run_collage_images(image_files, output_image_file, horizontal_count, vertical_count):
     """
-    将图片拼接为一张图片
+    将图片拼接为一张图片  
     """
     magick = user_setting.get('magick')
     cmd = f'"{magick}" montage {" ".join(image_files)} -tile {horizontal_count}x{vertical_count} -geometry +0+0 -background black "{output_image_file}"'
@@ -55,6 +55,33 @@ def run_add_text_to_image(image_file, output_image_file, text, color, size):
     magick = user_setting.get('magick')
     font_file = get_resource_file('msyh.ttf')
     cmd = f'"{magick}" convert "{image_file}" -font {font_file} -gravity South -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -font "{font_file}" "{output_image_file}"'
+    logger.debug(f'执行命令: {cmd}')
+    sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+
+
+def run_add_text_to_collage_image(image_file, output_image_file, data_list, cols, rows, width, height):
+    """
+    为拼图图片添加文字
+    data_list: example [{'text': '', 'color': '', 'size': ''}]
+    """
+    magick = user_setting.get('magick')
+    font_file = get_resource_file('msyh.ttf')
+    cmd = f'{magick} convert {image_file} '
+
+    index_num = 0
+    for row in range(rows):
+        for col in range(cols):
+            x = col * width + width // 2
+            y = row * height + height
+            text = data_list[index_num]['text']
+            color = data_list[index_num]['color']
+            size = data_list[index_num]['size']
+            cmd += f'-font {font_file} -pointsize {size} -fill "{color}" -annotate +{x}+{y} "{text}" '
+            index_num += 1
+            if index_num >= len(data_list):
+                break
+
+    cmd += f'"{output_image_file}"'
     logger.debug(f'执行命令: {cmd}')
     sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 

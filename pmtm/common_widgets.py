@@ -198,6 +198,39 @@ class DropTabelView(dy.MTableView):
             self.fileDropped.emit(links)
 
 
+class DropTreeView(dy.MTreeView):
+
+    """
+    支持拖拽功能的树状视图
+    """
+
+    fileDropped = QtCore.Signal(list)  # 文件拖拽完成信号
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setAcceptDrops(True)  # 启用拖拽功能
+
+    def _handle_url_mime_data(self, event):
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+            return True
+        event.ignore()
+        return False
+
+    def dragEnterEvent(self, event):
+        self._handle_url_mime_data(event)
+
+    def dragMoveEvent(self, event):
+        self._handle_url_mime_data(event)
+
+    def dropEvent(self, event):
+        if self._handle_url_mime_data(event):
+            links = [str(url.toLocalFile()) for url in event.mimeData().urls()]
+            self.fileDropped.emit(links)
+
+
+
 class ListWidgetWithLabel(CommonWidget):
     """
     带标签的列表组件
