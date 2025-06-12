@@ -1,4 +1,4 @@
-VERSION = '1.4'
+VERSION = '1.5'
 SETTING_FLAG = 'com.pmtm.settings'
 WINDOW_TITLE = 'PM TimeMachine'
 
