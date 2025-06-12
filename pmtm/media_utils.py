@@ -1,4 +1,6 @@
+import os
 import subprocess as sp
+
 from pmtm.core import user_setting, logger
 from pmtm.helper import get_resource_file
 
@@ -28,12 +30,12 @@ def scale_image(source_image, target_image, scale=1.0):
     sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
 
-def extract_thumbnail_from_image(image_file, output_image_file):
+def extract_thumbnail_from_image(image_file, output_image_file, gamma=1.0):
     """
     输出图片为缩略图
     """
     magick = user_setting.get('magick')
-    cmd = f'"{magick}" convert "{image_file}" -thumbnail 192x108 "{output_image_file}"'
+    cmd = f'"{magick}" convert "{image_file}" -thumbnail 192x108 -gamma {gamma} "{output_image_file}"'
     logger.debug(f'执行命令: {cmd}')
     sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
@@ -48,40 +50,32 @@ def run_collage_images(image_files, output_image_file, horizontal_count, vertica
     sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
 
-def run_add_text_to_image(image_file, output_image_file, text, color, size):
+def run_add_text_to_image(image_file, output_image_file, text, color, size, gravity='South', gamma=1.0):
     """
     为图片添加文字，文字在图片底部中心位置
     """
     magick = user_setting.get('magick')
     font_file = get_resource_file('msyh.ttf')
-    cmd = f'"{magick}" convert "{image_file}" -font {font_file} -gravity South -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -font "{font_file}" "{output_image_file}"'
+    cmd = f'"{magick}" convert "{image_file}" -font {font_file} -gravity {gravity} -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -gamma {gamma} "{output_image_file}"'
     logger.debug(f'执行命令: {cmd}')
     sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
 
-def run_add_text_to_collage_image(image_file, output_image_file, data_list, cols, rows, width, height):
+def run_add_text_to_collage_image(output_image_file, data_list, horizontal_count, vertical_count, gravity='South', size=10, gamma=1.0):
     """
     为拼图图片添加文字
-    data_list: example [{'text': '', 'color': '', 'size': ''}]
+    data_list: example [{'text': '', 'color': '', 'file_path': ''}]
     """
     magick = user_setting.get('magick')
     font_file = get_resource_file('msyh.ttf')
-    cmd = f'{magick} convert {image_file} '
+    cmd = f'{magick} montage ^ '
+    for data in data_list:
+        file_path = data['file_path']
+        text = data['text']
+        color = data['color']
+        cmd += f'( {file_path} -font {font_file} -gravity {gravity} -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -gamma {gamma} ) ^ '
 
-    index_num = 0
-    for row in range(rows):
-        for col in range(cols):
-            x = col * width + width // 2
-            y = row * height + height
-            text = data_list[index_num]['text']
-            color = data_list[index_num]['color']
-            size = data_list[index_num]['size']
-            cmd += f'-font {font_file} -pointsize {size} -fill "{color}" -annotate +{x}+{y} "{text}" '
-            index_num += 1
-            if index_num >= len(data_list):
-                break
-
-    cmd += f'"{output_image_file}"'
+    cmd += f'-tile {horizontal_count}x{vertical_count} -geometry +0+0 -background black "{output_image_file}"'
     logger.debug(f'执行命令: {cmd}')
     sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
