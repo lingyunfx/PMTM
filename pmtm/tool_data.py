@@ -5,7 +5,6 @@ from pmtm.feature.scan_maya_ref import MayaRefScanUI
 from pmtm.feature.scan_maya_frame import MayaFrameScanUI
 from pmtm.feature.scan_movie_data import ScanMovieDataUI
 from pmtm.feature.convert_tool import ConvertToolUI
-from pmtm.feature.image_collage import ImageCollageUI
 from pmtm.feature.add_text_to_image import AddTextToImageUI
 
 
@@ -25,7 +24,7 @@ DATA_LIST = [
     ToolData(name='Maya Reference扫描',
              group='',
              icon=r'./resource/scan_maya.png',
-             wiki_url='https://lingyunfx.com/pmtm-doc/#1-%E6%89%AB%E6%8F%8F-Maya-Reference',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#1-扫描-Maya-Reference',
              widget=MayaRefScanUI,
              description="""
              扫描指定目录下的Maya文件（仅ma格式），获取其引用的reference路径。
@@ -37,7 +36,7 @@ DATA_LIST = [
     ToolData(name='扫描Maya文件时间范围',
              group='',
              icon='./resource/frame_range.png',
-             wiki_url='https://lingyunfx.com/pmtm-doc/#2-%E6%89%AB%E6%8F%8FMaya%E6%96%87%E4%BB%B6%E7%9A%84%E6%97%B6%E9%97%B4%E8%8C%83%E5%9B%B4',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#2-扫描Maya文件的时间范围',
              widget=MayaFrameScanUI,
              description="""
              扫描指定目录下的Maya文件（仅ma格式），获取其开始帧和结束帧，然后将结果导出一个表格。
@@ -52,7 +51,7 @@ DATA_LIST = [
     ToolData(name='扫描视频信息',
              group='',
              icon='./resource/movie.png',
-             wiki_url='https://lingyunfx.com/pmtm-doc/#3-%E6%89%AB%E6%8F%8F%E8%A7%86%E9%A2%91%E4%BF%A1%E6%81%AF',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#3-扫描视频信息',
              widget=ScanMovieDataUI,
              description="""
              扫描指定文件夹下的mov或mp4视频，也可以直接将文件拖拽到Table窗口中。
@@ -63,7 +62,7 @@ DATA_LIST = [
     ToolData(name='序列帧/视频互转',
              group='',
              icon='./resource/conversion.png',
-             wiki_url='https://lingyunfx.com/pmtm-doc/#4-%E5%BA%8F%E5%88%97%E5%B8%A7-%E8%A7%86%E9%A2%91%E4%BA%92%E8%BD%AC',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#4-序列帧-视频互转',
              widget=ConvertToolUI,
              description="""
              可以将视频转换为序列帧，或者将序列帧转换为视频。
@@ -75,33 +74,18 @@ DATA_LIST = [
              4.点击'开始转换'按钮，等待任务完成。
              """,
              ),
-    ToolData(name='图片拼图',
-             group='',
-             icon='./resource/image_collage.png',
-             wiki_url='https://lingyunfx.com/pmtm-doc/#5-%E5%9B%BE%E7%89%87%E6%8B%BC%E5%9B%BE',
-             widget=ImageCollageUI,
-             enable=False,
-             description="""
-             可以将若干图片拼成一整张图片，比如将九张图片拼成一个九宫格。
-
-             【使用方法】
-             1.将图片拖拽到Table窗口中
-             2.图片水平/垂直数量会自动计算，默认为正方形
-             3.点击'输出'按钮，任务完成后，将自动打开图片。
-             """,
-             ),
     ToolData(name='图片拼图/添加反馈文字',
              group='',
              icon='./resource/add_text_to_image.png',
-             wiki_url='https://lingyunfx.com/pmtm-doc/#6-%E5%9B%BE%E7%89%87%E6%B7%BB%E5%8A%A0%E5%8F%8D%E9%A6%88%E6%96%87%E5%AD%97',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#5-图片拼图-添加反馈文字',
              widget=AddTextToImageUI,
              description="""
-             在图片上添加文字。输出时也可以进行选择是否拼成一整张图片。
+             将多张图片拼成一张，也可以在图片上添加文字。
 
              【使用方法】
              1.将图片拖拽到Table窗口中
              2.在表格中，选中条目后右键菜单，设置文字内容，颜色
-             3.输出选项中，选择"分别输出"或"拼接整张"。然后选择输出的文件格式。 （其它选项可以查看帮助文档详细说明）
+             3.输出选项中，选择"分别输出"或"拼接整张"。然后选择输出的文件格式。（其它选项可以查看帮助文档详细说明）
              4.点击'开始任务'按钮，等待任务完成。
              """,
              ),
