@@ -1,9 +1,9 @@
 ### 关于PMTM
-PMTM（PM Time Machine）是为vfx行业制片使用的一些小工具集，旨在提升工作效率，免去一些繁杂重复的事务和操作。
+PMTM（PM TimeMachine）是为视效行业制片准备的一些小工具集，旨在提升工作效率，免去一些繁杂重复的事务和操作。
 
 > 每次点击按钮，就像时间机器一样“快进”到任务完成。
 
-![](https://lingyunfx-1259219315.cos.ap-beijing.myqcloud.com/pic/20250610232418.png)
+![](https://lingyunfx-1259219315.cos.ap-beijing.myqcloud.com/pic/20250612184139.png)
 
 
 ### 现有功能概述
@@ -11,7 +11,6 @@ PMTM（PM Time Machine）是为vfx行业制片使用的一些小工具集，旨�
 - 扫描Maya文件的时间范围
 - 扫描视频信息（比如帧数，分辨率，色彩空间，编码等）
 - 序列帧/视频互转
-- 图片拼图
 - 图片添加反馈文字
 
 ### 环境部署

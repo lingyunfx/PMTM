@@ -2,8 +2,8 @@ import os
 import time
 import json
 import tempfile
-import shutil
 import copy
+import traceback
 from functools import partial
 
 import dayu_widgets as dy
@@ -14,7 +14,7 @@ from PySide2 import QtWidgets, QtCore, QtGui
 from pmtm.helper import g_pixmap, check_depend_tool_exist, open_file, open_folder
 from pmtm.core import logger, user_setting
 from pmtm.common_widgets import CommonToolWidget, MenuPushButton, CommonDialog, DropTabelView, InfoBoard, CommonWidget
-from pmtm.media_utils import extract_thumbnail_from_image, run_add_text_to_image, run_collage_images, run_add_text_to_collage_image
+from pmtm.media_utils import extract_thumbnail_from_image, run_add_text_to_image, run_add_text_to_collage_image
 
 
 def _color(x, y):
@@ -146,6 +146,8 @@ class AddTextToImageUI(CommonToolWidget):
         self.save_history_ck.stateChanged.connect(self.save_history_ck_state_changed)
     
     def run_bt_clicked(self):
+        logger.debug(f'开始任务按钮点击')
+
         # 检查依赖软件是否存在
         if not check_depend_tool_exist():
             dy.MToast(text='请设置依赖软件路径',
@@ -167,6 +169,8 @@ class AddTextToImageUI(CommonToolWidget):
         
         if not export_path:
             return
+        
+        logger.debug(f'导出路径: {export_path}')
 
         # 只保留必要数据
         data_list = copy.deepcopy(self.model.get_data_list())
@@ -179,6 +183,7 @@ class AddTextToImageUI(CommonToolWidget):
                       'image': data['image']
                       } 
                       for data in data_list]
+        logger.debug(f'数据列表: {data_list}')
 
         # 保存历史记录
         if self.save_history_ck.isChecked():
@@ -190,7 +195,7 @@ class AddTextToImageUI(CommonToolWidget):
             history_file = os.path.join(history_folder, file_name)
             with open(f'{history_file}.json', 'w') as f:
                 json.dump(data_list, f)
-            logger.debug(f'保存历史记录: {history_file}')
+            logger.debug(f'保存历史记录: {history_file}.json')
 
         # 开始任务
         self.set_ui_status(freezed=True)
@@ -209,11 +214,18 @@ class AddTextToImageUI(CommonToolWidget):
         task.start()
 
     def clear_bt_clicked(self):
+        """
+        清空表格
+        """
         self.model.clear()
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()
     
     def drop_to_table_function(self, path_list):
+        """
+        获取拖拽到表格的路径列表，进行处理
+        """
+        logger.debug(f'拖拽到表格的路径列表: {path_list}')
         if not check_depend_tool_exist():
             dy.MToast(text='请设置依赖软件路径',
                       duration=3.0,
@@ -226,12 +238,17 @@ class AddTextToImageUI(CommonToolWidget):
                              is_include=self.is_include_ck.isChecked(),
                              only_get_first=self.only_get_first_ck.isChecked(),
                              sort_by_file_name=self.sort_by_file_name_ck.isChecked(),
+                             gamma=self.gamma_box.value(),
                              parent=self)
         task.data_sig.connect(self.add_data_to_table)
         task.finished.connect(self.set_ui_status)
         task.start()
     
     def add_data_to_table(self, data):
+        """
+        将数据添加到表格中
+        """
+        # 检查文件是否存在
         exists_path_list = [x['file_path'] for x in self.model.get_data_list()]
         if data['file_path'] in exists_path_list:
             dy.MToast(text='文件已存在',
@@ -248,10 +265,14 @@ class AddTextToImageUI(CommonToolWidget):
             data.update({'order': self.model.rowCount() + 1})
             self.model.append(data)
 
+        # 调整表格大小
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()
 
     def slot_context_menu(self, data):
+        """
+        右键菜单
+        """
         if not data.selection:
             return
         selections = data.selection
@@ -259,6 +280,9 @@ class AddTextToImageUI(CommonToolWidget):
             self.create_context_menu(selections=selections)
     
     def create_context_menu(self, selections):
+        """
+        创建右键菜单
+        """
         menu = dy.MMenu(parent=self.table_view)
         menu.addAction('编辑文字', partial(self.edit_text, selections))
         menu.addAction('从表格中删除', partial(self.remove_item, selections))
@@ -268,6 +292,9 @@ class AddTextToImageUI(CommonToolWidget):
         menu.exec_(QtGui.QCursor.pos())
     
     def edit_text(self, selections):
+        """
+        右键菜单-编辑文字
+        """
         dialog = EditTextDialog(parent=self)
         if dialog.exec_():
             for data in selections:
@@ -277,6 +304,9 @@ class AddTextToImageUI(CommonToolWidget):
                 self.table_view.resizeRowsToContents()
 
     def remove_item(self, selections):
+        """
+        从表格中删除选中项
+        """
         for sel in selections:
             self.model.remove(sel)
 
@@ -287,6 +317,9 @@ class AddTextToImageUI(CommonToolWidget):
         self.table_view.resizeRowsToContents()
     
     def sort_by_selection(self, selections):
+        """
+        按选择顺序排序
+        """
         data_list = self.model.get_data_list()
         self.model.clear()
         start_sort_num = len(selections)
@@ -306,6 +339,9 @@ class AddTextToImageUI(CommonToolWidget):
         self.table_view.resizeRowsToContents()
     
     def sort_by_file_name(self):
+        """
+        按文件名排序
+        """
         data_list = self.model.get_data_list()
         self.model.clear()
 
@@ -320,12 +356,18 @@ class AddTextToImageUI(CommonToolWidget):
         self.table_view.resizeRowsToContents()
     
     def set_ui_status(self, freezed=False):
+        """
+        设置UI状态
+        """
         for w in (self.save_ext_cb, self.export_type_rb, self.run_bt, self.history_bt, self.clear_bt,
                   self.is_include_ck, self.only_get_first_ck, self.sort_by_file_name_ck, self.save_history_ck,
-                  self.open_after_export_ck):
+                  self.open_after_export_ck, self.gamma_box):
             w.setEnabled(not freezed)
     
     def import_data_from_file(self, file_path):
+        """
+        从历史记录中导入数据
+        """
         if not os.path.exists(file_path):
             dy.MToast(text='文件不存在',
                       duration=3.0,
@@ -347,12 +389,16 @@ class AddTextToImageUI(CommonToolWidget):
                 tmp_dir = tempfile.mkdtemp()
                 thumb_path = os.path.join(tmp_dir, 'thumbnail.jpg')
                 extract_thumbnail_from_image(image_file=data['file_path'],
-                                             output_image_file=thumb_path)
+                                             output_image_file=thumb_path,
+                                             gamma=self.gamma_box.value())
                 data['image'] = thumb_path
 
             self.add_data_to_table(data)
 
     def history_bt_clicked(self):
+        """
+        历史记录按钮点击
+        """
         history_folder = self.get_history_folder()
         history_widget = HistoryWidget(history_folder=history_folder,
                                        parent=self)
@@ -365,6 +411,9 @@ class AddTextToImageUI(CommonToolWidget):
     
     @staticmethod
     def get_history_folder():
+        """
+        获取历史记录文件夹
+        """
         history_path = os.path.join(os.path.expanduser('~'), '.pmtm', 'history', 'add_text_to_image')
         if not os.path.exists(history_path):
             os.makedirs(history_path)
@@ -372,11 +421,17 @@ class AddTextToImageUI(CommonToolWidget):
     
     @property
     def current_gravity(self):
+        """
+        获取当前对齐方式
+        """
         _index = self.gravity_rb.get_dayu_checked()
         key = list(GRAVITY_DICT.keys())[_index]
         return GRAVITY_DICT[key]
 
     def gamma_box_value_changed(self, value):
+        """
+        每次改变记录伽马值
+        """
         user_setting.set('add_text_to_image_gamma', value)
 
     def save_history_ck_state_changed(self, state):
@@ -387,12 +442,17 @@ class AddTextToImageUI(CommonToolWidget):
 
 
 class EditTextDialog(CommonDialog):
+    """
+    编辑文字对话框
+    """
     
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
+        # data
         self.current_color = '#aa0000'
 
+        # widgets
         self.text_cb = MenuPushButton().small()
         self.text_line = dy.MLineEdit().small()
         self.color_choose_bt = dy.MPushButton().small()
@@ -452,17 +512,22 @@ class HistoryWidget(CommonWidget):
     def __init__(self, history_folder, parent=None):
         super().__init__(parent=parent)
 
+        # data
         self.history_folder = history_folder
-        self.list_widget = QtWidgets.QListWidget(parent=self)
-        self.open_folder_bt = dy.MPushButton('打开历史记录文件夹').small()
         self.history_files = {}
 
+        # widgets
+        self.list_widget = QtWidgets.QListWidget(parent=self)
+        self.open_folder_bt = dy.MPushButton('打开历史记录文件夹').small()
+
+        # init ui
         self.init_ui()
         self.set_data()
         self.connect_command()
     
     def init_ui(self):
-        self.add_widgets_v_line(dy.MLabel('双击选择一项记录导入').h4().secondary(), self.open_folder_bt, self.list_widget)
+        self.add_widgets_v_line(dy.MLabel('双击选择一项记录导入').h4().secondary(),
+                                self.open_folder_bt, self.list_widget)
         self.setLayout(self.main_layout)
     
     def connect_command(self):
@@ -473,8 +538,11 @@ class HistoryWidget(CommonWidget):
         self.file_path_sig.emit(self.history_files[item.text()])
 
     def set_data(self):
+        # 过滤出所有json文件
         history_files_list = [os.path.join(self.history_folder, file) for file in os.listdir(self.history_folder) if file.endswith('.json')]
+        # 按修改时间排序
         history_files_list = sorted(history_files_list, key=lambda x: os.path.getmtime(x), reverse=True)
+        # 添加到列表中
         for history_file in history_files_list:
             name = os.path.splitext(os.path.basename(history_file))[0]
             self.list_widget.addItem(name)
@@ -501,17 +569,21 @@ class DropImageTask(QtCore.QThread):
         self.gamma = gamma
 
     def run(self):
-        # 获取所有文件
-        files_list = self.get_all_file_path(self.path_list)
+        try:
+            # 获取所有文件
+            files_list = self.get_all_file_path(self.path_list)
 
-        # 如果勾选按文件名排序，则进行排序
-        if self.sort_by_file_name:
-            files_list = sorted(files_list, key=lambda x: os.path.basename(x))
+            # 如果勾选按文件名排序，则进行排序
+            if self.sort_by_file_name:
+                files_list = sorted(files_list, key=lambda x: os.path.basename(x))
 
-        # 获取文件信息
-        for file_path in files_list:
-            logger.debug(f'获取文件信息: {file_path}')
-            self.get_data_from_file(file_path)
+            # 获取文件信息
+            for file_path in files_list:
+                logger.debug(f'获取文件信息: {file_path}')
+                self.get_data_from_file(file_path)
+        except Exception as e:
+            logger.error(f'获取文件信息失败: {e}')
+            logger.error(traceback.format_exc())
 
     def get_all_file_path(self, path_list):
         """
@@ -588,38 +660,48 @@ class AddTextTask(QtCore.QThread):
         self.gamma = gamma
 
     def run(self):
-        if self.export_type_num == 0:
-            # 分别输出单张
-            self.export_each_image(output_folder=self.output_path)
+        try:
+            if self.export_type_num == 0:
+                # 导出方式：分别输出单张
+                self.export_each_image(output_folder=self.output_path)
+            elif self.export_type_num == 1:
+                # 导出方式：输出整张。（为每张添加文字，然后拼成整张图）
+                now_time = time.time()
+                data_list = []
 
-        elif self.export_type_num == 1:
-            # 为每张添加文字，然后拼成整张图
-            data_list = []
-            for data in self.data_list:
-                color = QtGui.QColor(data['color'])
-                rgb = f'rgba({color.red()}, {color.green()}, {color.blue()}, {self.text_transparency/100.0})'
-                data_list.append({
-                    'text': data['text'],
-                    'color': rgb,
-                    'file_path': data['file_path']
-                })
+                for data in self.data_list:
+                    color = QtGui.QColor(data['color'])
+                    rgb = f'rgba({color.red()}, {color.green()}, {color.blue()}, {self.text_transparency/100.0})'
+                    data_list.append({
+                        'text': data['text'],
+                        'color': rgb,
+                        'file_path': data['file_path']
+                    })
 
-            vertical_count, horizontal_count = self.calc_vh_value(total_count=len(data_list))
-            self.log_sig.emit(f'正在添加文字及拼图，请稍后...')
-            run_add_text_to_collage_image(
-                output_image_file=self.output_path,
-                data_list=data_list,
-                horizontal_count=horizontal_count,
-                vertical_count=vertical_count,
-                gravity=self.gravity,
-                size=self.text_size*10,
-                gamma=self.gamma
-            )
-            
-        else:
-            return
+                # 计算水平和垂直数量，用于拼图
+                vertical_count, horizontal_count = self.calc_vh_value(total_count=len(data_list))
+                self.log_sig.emit(f'正在添加文字及拼图，请稍后...')
 
-        self.log_sig.emit(f'[pass]导出完成! {self.output_path}')
+                # 执行主要函数
+                run_add_text_to_collage_image(
+                    output_image_file=self.output_path,
+                    data_list=data_list,
+                    horizontal_count=horizontal_count,
+                    vertical_count=vertical_count,
+                    gravity=self.gravity,
+                    size=self.text_size*10,
+                    gamma=self.gamma
+                )
+                self.log_sig.emit(f'添加文字及拼图完成，耗时: {time.time() - now_time:.2f}秒')
+            else:
+                return
+
+            self.log_sig.emit(f'[pass]导出完成! {self.output_path}')
+
+        except Exception as e:
+            logger.error(f'导出失败: {e}')
+            logger.error(traceback.format_exc())
+            self.log_sig.emit(f'[error]导出失败，请查看日志。')
 
         if self.open_after_export:
             if os.path.isfile(self.output_path):
@@ -664,4 +746,3 @@ class AddTextTask(QtCore.QThread):
         vertical_count = horizontal_count
 
         return horizontal_count, vertical_count
-
