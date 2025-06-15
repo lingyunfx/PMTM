@@ -44,7 +44,7 @@ GRAVITY_DICT = {
 }
 
 DEFAULT_GRAVITY = '下中'
-DEFAULT_COLOR = '#aa0000'
+DEFAULT_COLOR = '#00aa00'
 DEFAULT_SIZE = 6
 
 
@@ -155,6 +155,13 @@ class AddTextToImageUI(CommonToolWidget):
                       dayu_type='error',
                       parent=self).show()
             return
+        
+        # 检查表格里的图片文件是否存在
+        for data in self.model.get_data_list():
+            if not os.path.exists(data['file_path']):
+                self.info_board.add_line(f'[error] 文件不存在: {data["file_path"]}')
+                self.info_board.add_line(f'[error] 请在任务开始前，检查文件是否存在')
+                return
 
         # 获取导出路径
         if self.export_type_rb.get_dayu_checked() == 0:
@@ -450,7 +457,7 @@ class EditTextDialog(CommonDialog):
         super().__init__(parent=parent)
 
         # data
-        self.current_color = '#aa0000'
+        self.current_color = '#00aa00'
 
         # widgets
         self.text_cb = MenuPushButton().small()
@@ -470,7 +477,7 @@ class EditTextDialog(CommonDialog):
         self.setLayout(self.main_layout)
 
     def adjust_ui(self):
-        self.text_cb.set_menus(['制作中', '待审核', '已进序列', '自定义'])
+        self.text_cb.set_menus(['CBB', '修改中', '制作中', '待审核', '自定义'])
         self.text_cb.setFixedWidth(100)
         self.color_choose_bt.setFixedWidth(100)
         self.color_choose_bt.setStyleSheet(f'background-color: {QtGui.QColor(self.current_color).name()};')
@@ -496,6 +503,15 @@ class EditTextDialog(CommonDialog):
             self.text_line.setEnabled(True)
         else:
             self.text_line.setEnabled(False)
+        
+        color = {
+            'CBB': '#00aa00',
+            '修改中': '#aa0000',
+            '制作中': '#ff5500',
+            '待审核': '#ffff00',
+        }.get(text, DEFAULT_COLOR)
+        self.color_choose_bt.setStyleSheet(f'background-color: {color};')
+        self.current_color = color
     
     @property
     def current_text(self):
