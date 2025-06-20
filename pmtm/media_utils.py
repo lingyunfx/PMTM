@@ -1,5 +1,6 @@
 import os
 import subprocess as sp
+import tempfile
 
 from pmtm.core import user_setting, logger
 from pmtm.helper import get_resource_file
@@ -77,7 +78,8 @@ def run_add_text_to_collage_image(output_image_file, data_list, horizontal_count
 
     cmd += f'-tile {horizontal_count}x{vertical_count} -geometry +0+0 -background black "{output_image_file}"'
     logger.debug(f'执行命令: {cmd}')
-    sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+    logger.debug(f'cmd长度: {len(cmd)}')
+    sp.run(cmd, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
 
 # -----------------------视频处理--------------------------------
