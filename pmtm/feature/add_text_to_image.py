@@ -14,14 +14,15 @@ from PySide2 import QtWidgets, QtCore, QtGui
 from pmtm.helper import g_pixmap, check_depend_tool_exist, open_file, open_folder
 from pmtm.core import logger, user_setting
 from pmtm.common_widgets import CommonToolWidget, MenuPushButton, CommonDialog, DropTabelView, InfoBoard, CommonWidget
-from pmtm.media_utils import extract_thumbnail_from_image, run_add_text_to_image, run_add_text_to_collage_image
+from pmtm.media_utils import extract_thumbnail_from_image, run_add_text_to_image, run_add_text_to_collage_image, extract_thumbnail_from_mov
 
 
 def _color(x, y):
     return QtGui.QColor(y.get('color'))
 
 
-SUPPORTED_EXT = ['.png', '.jpg', '.jpeg', '.tiff', '.exr', '.JPG', '.JPEG', '.TIFF', '.EXR', '.PNG']
+IMAGE_SUPPORTED_EXT = ['.png', '.jpg', '.jpeg', '.tiff', '.exr', '.JPG', '.JPEG', '.TIFF', '.EXR', '.PNG']
+VIDEO_SUPPORTED_EXT = ['.mp4', '.mov', '.MP4', '.MOV']
 
 HEADER_LIST = [
             {'label': '缩略图', 'key': 'thumbnail', 'icon': g_pixmap},
@@ -103,7 +104,7 @@ class AddTextToImageUI(CommonToolWidget):
         self.export_type_rb.set_dayu_checked(1)
         self.gravity_rb.set_button_list(list(GRAVITY_DICT.keys()))
         self.gravity_rb.set_dayu_checked(7)
-        self.save_ext_cb.addItems(SUPPORTED_EXT[:5])
+        self.save_ext_cb.addItems(IMAGE_SUPPORTED_EXT[:5])
         self.text_size_box.setRange(1, 100)
         self.text_size_box.setValue(DEFAULT_SIZE)
         self.text_transparency_box.setRange(1, 100)
@@ -170,7 +171,7 @@ class AddTextToImageUI(CommonToolWidget):
         elif self.export_type_rb.get_dayu_checked() == 1:
             export_path, _ = QtWidgets.QFileDialog.getSaveFileName(parent=self,
                                                                    caption='保存为图片',
-                                                                   filter=f'图片 (*{" *".join(SUPPORTED_EXT[:5])})')
+                                                                   filter=f'图片 (*{" *".join(IMAGE_SUPPORTED_EXT[:5])})')
         else:
             return
         
@@ -609,19 +610,28 @@ class DropImageTask(QtCore.QThread):
 
         for path in path_list:
             if os.path.isfile(path):
-                if os.path.splitext(path)[1] in SUPPORTED_EXT:
+                if os.path.splitext(path)[1] in IMAGE_SUPPORTED_EXT:
+                    files_list.append(path)
+                elif os.path.splitext(path)[1] in VIDEO_SUPPORTED_EXT:
                     files_list.append(path)
                 else:
                     logger.error(f'不支持的文件类型: {path}')
                     continue
             elif os.path.isdir(path):
+                # 扫描图片
                 root_folder = DayuPath(path)
-                for seq_file in root_folder.scan(recursive=self.is_include, ext_filters=tuple(SUPPORTED_EXT)):
+                for seq_file in root_folder.scan(recursive=self.is_include, ext_filters=tuple(IMAGE_SUPPORTED_EXT)):
                     if self.only_get_first:
                         file_path = seq_file.restore_pattern(seq_file.frames[0])
                         files_list.append(file_path)
                     else:
                         for file_path in seq_file.restore_pattern(seq_file.frames):
+                            files_list.append(file_path)
+                # 扫描视频
+                for root, dirs, files in os.walk(path):
+                    for f in files:
+                        file_path = os.path.join(root, f)
+                        if os.path.splitext(file_path)[1] in VIDEO_SUPPORTED_EXT:
                             files_list.append(file_path)
             else:
                 continue
@@ -633,16 +643,25 @@ class DropImageTask(QtCore.QThread):
         """
         从文件中获取数据
         """
+        print('file_path', file_path)
         ext = os.path.splitext(file_path)[1]
-        if ext not in SUPPORTED_EXT:
+        if ext not in IMAGE_SUPPORTED_EXT and ext not in VIDEO_SUPPORTED_EXT:
             logger.error(f'不支持的文件类型: {file_path}')
             return
 
         tmp_dir = tempfile.mkdtemp()
         thumb_path = os.path.join(tmp_dir, 'thumbnail.jpg')
-        extract_thumbnail_from_image(image_file=file_path,
-                                     output_image_file=thumb_path,
-                                     gamma=self.gamma)
+
+        if ext in IMAGE_SUPPORTED_EXT:
+            extract_thumbnail_from_image(image_file=file_path,
+                                         output_image_file=thumb_path,
+                                         gamma=self.gamma)
+        elif ext in VIDEO_SUPPORTED_EXT:
+            extract_thumbnail_from_mov(mov_file=file_path,
+                                       output_image_file=thumb_path
+                                       )
+        else:
+            return
         
         data = {
             'thumbnail': '',
@@ -688,10 +707,17 @@ class AddTextTask(QtCore.QThread):
                 for data in self.data_list:
                     color = QtGui.QColor(data['color'])
                     rgb = f'rgba({color.red()}, {color.green()}, {color.blue()}, {self.text_transparency/100.0})'
+                    ext = os.path.splitext(data['file_path'])[1]
+                    if ext in IMAGE_SUPPORTED_EXT:
+                        image_file = data['file_path']
+                    elif ext in VIDEO_SUPPORTED_EXT:
+                        image_file = data['image']
+                    else:
+                        continue
                     data_list.append({
                         'text': data['text'],
                         'color': rgb,
-                        'file_path': data['file_path']
+                        'file_path': image_file
                     })
 
                 # 计算水平和垂直数量，用于拼图
@@ -741,7 +767,14 @@ class AddTextTask(QtCore.QThread):
             output_files.append(output_image_file)
             color = QtGui.QColor(data['color'])
             rgb = f'rgba({color.red()}, {color.green()}, {color.blue()}, {self.text_transparency/100.0})'
-            run_add_text_to_image(image_file=data['file_path'],
+            ext = os.path.splitext(data['file_path'])[1]
+            if ext in IMAGE_SUPPORTED_EXT:
+                image_file = data['file_path']
+            elif ext in VIDEO_SUPPORTED_EXT:
+                image_file = data['image']
+            else:
+                continue
+            run_add_text_to_image(image_file=image_file,
                                   output_image_file=output_image_file,
                                   text=data['text'],
                                   color=rgb,
