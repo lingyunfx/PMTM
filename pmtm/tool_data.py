@@ -6,6 +6,7 @@ from pmtm.feature.scan_maya_frame import MayaFrameScanUI
 from pmtm.feature.scan_movie_data import ScanMovieDataUI
 from pmtm.feature.convert_tool import ConvertToolUI
 from pmtm.feature.add_text_to_image import AddTextToImageUI
+from pmtm.feature.pr_tools import PRToolsUI
 
 
 @dataclass
@@ -87,6 +88,18 @@ DATA_LIST = [
              2.在表格中，选中条目后右键菜单，设置文字内容，颜色
              3.输出选项中，选择"分别输出"或"拼接整张"。然后选择输出的文件格式。（其它选项可以查看帮助文档详细说明）
              4.点击'开始任务'按钮，等待任务完成。
+             """,
+             ),
+ToolData(name='PR工具集合',
+             group='',
+             icon='./resource/adobe_premiere_pro_200px.png',
+             wiki_url='https://lingyunfx.com/pmtm-doc/#5-图片拼图-添加反馈文字',
+             widget=PRToolsUI,
+             description="""
+             一些Premiere Pro的小工具集合，需安装 Pymiere Link，否则无法使用。（点击问号按钮参考帮助文档）
+             功能包括:
+                1.为选择的clips修改名称
+                2.导出选择的clips为单个mov
              """,
              ),
 ]

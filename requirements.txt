@@ -11,3 +11,4 @@ Qt.py==1.4.1
 shiboken2==5.15.2.1
 six==1.17.0
 types-pyside2==5.15.2.1.7
+pymiere==1.4.1

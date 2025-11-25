@@ -1,5 +1,6 @@
 import os
 import subprocess as sp
+from glob import glob
 
 from PySide2 import QtGui, QtCore
 from pmtm.core import user_setting
@@ -39,6 +40,10 @@ def scan_files(scan_folder, is_include, ext_list):
 
 def get_resource_file(name):
     return os.path.join('./resource', name)
+
+
+def list_resource_files(ext):
+    return glob('./resource/*' + ext)
 
 
 def check_depend_tool_exist():
