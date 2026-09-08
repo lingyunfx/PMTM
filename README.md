@@ -12,7 +12,7 @@ PMTM（PM TimeMachine）是为视效行业制片准备的一些小工具集，�
 - 扫描视频信息（比如帧数，分辨率，色彩空间，编码等）
 - 序列帧/视频互转
 - 图片添加反馈文字
-- PR辅助工具
+- PR辅助工具（分别导出clip，批量命名clip）
 
 ### 环境部署
 项目使用 [uv](https://docs.astral.sh/uv/) 管理依赖和虚拟环境，Python 版本为 3.10。
@@ -38,21 +38,6 @@ uv run pmtm
 ```
 `uv run` 会在执行前自动检查并同步环境，所以日常开发直接跑这一条命令即可，不需要手动激活虚拟环境。
 
-### 依赖管理常用命令
-```shell
-# 添加依赖
-uv add <package>
-
-# 移除依赖
-uv remove <package>
-
-# 升级锁文件中的依赖版本
-uv lock --upgrade
-
-# 安装包含开发依赖（pyinstaller 等）的环境
-uv sync --all-groups
-```
-依赖声明在 `pyproject.toml`，精确版本锁定在 `uv.lock`，两个文件都需要提交到版本库。
 
 ### 第三方库的补丁
 dayu_widgets 和 dayu_path 有几处问题需要修正。
@@ -83,7 +68,10 @@ dayu_widgets 和 dayu_path 有几处问题需要修正。
 uv sync --all-groups
 uv run pyinstaller main.py -n PMTM -i app.ico --onefile -p . --add-data "resource;resource" --collect-data dayu_widgets --hidden-import=PySide2 --hidden-import=PySide2.QtSvg --noconfirm
 ```
-产物是 `dist/PMTM.exe`。`resource` 目录和 dayu_widgets 自带的静态文件都已经打进 exe，
-单个文件就能分发，不需要再往旁边拷贝资源目录。
+产物是 `dist/PMTM.exe`。项目里的 `resource` 目录和 dayu_widgets 自带的静态文件都已经打进 exe，
+分发时单个文件就够，不用再往 exe 旁边拷贝资源目录。
+
+注意打包只是把 `resource` 复制了一份进 exe，项目里的这个目录不能删：
+源码中有二十多处直接引用 `./resource/xxx`，删掉之后开发时跑不起来，打包也会失败。
 
 注意 `--add-data` 的路径分隔符在 Windows 上是 `;`，macOS/Linux 上是 `:`。

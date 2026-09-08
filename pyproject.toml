@@ -2,7 +2,7 @@
 name = "pmtm"
 dynamic = ["version"]
 description = "PM TimeMachine，为视效行业制片准备的小工具集"
-readme = "readme.md"
+readme = "README.md"
 requires-python = ">=3.10,<3.11"
 license = { file = "LICENSE" }
 dependencies = [
