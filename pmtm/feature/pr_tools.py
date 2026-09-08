@@ -1,4 +1,5 @@
 import os
+import re
 import traceback
 import pymiere
 
@@ -85,12 +86,16 @@ class PRToolsUI(CommonToolWidget):
         if not selected_clip:
             return
 
-        output_folder = self.export_dir_input.text()
+        output_folder = self.export_dir_input.text().strip()
         if not output_folder or not os.path.isdir(output_folder):
             self.info_broad.add_line(f'[error]输出目录不存在 {output_folder}')
             return
 
-        preset_file = os.path.join(self.preset_dir, self.presets_cb.currentText())
+        # Premiere 不接受混合分隔符的路径，统一成当前系统的分隔符。
+        # Windows 上输入 D:/tmp/out 时，os.path.join 会拼成 D:/tmp/out\xxx.mp4 导致导出失败
+        output_folder = os.path.normpath(output_folder)
+
+        preset_file = os.path.normpath(os.path.join(self.preset_dir, self.presets_cb.currentText()))
 
         if not preset_file or not os.path.exists(preset_file):
             self.info_broad.add_line(f'[error]预设文件不存在 {preset_file}')
@@ -105,13 +110,25 @@ class PRToolsUI(CommonToolWidget):
 
         ext = self.output_ext_cb.currentText()
 
+        # Premiere 内部按 88200Hz 的采样精度存序列入出点，传进去的秒数会被向下截断。
+        # 落在非整数秒帧边界上的时间点会退到前一帧：入点退一帧，导出结果开头会多出
+        # 上一个 clip 的最后一帧；出点退一帧（出点是 exclusive 的），末尾会少一帧。
+        # 所以入出点都往后推半帧，量化后仍落在目标帧内，且不会跨到下一帧。
+        try:
+            fps = 1 / active_sequence.getSettings().videoFrameRate.seconds
+            half_frame = 0.5 / fps
+        except Exception:
+            half_frame = 0
+            logger.error(traceback.format_exc())
+
         for clip in selected_clip:
             output_file = os.path.join(output_folder, f'{clip.name}.{ext}')
-            print(clip, clip.start, clip.end)
 
             # 设置入点和出点
-            active_sequence.setInPoint(clip.start)
-            active_sequence.setOutPoint(clip.end)
+            active_sequence.setInPoint(clip.start.seconds + half_frame)
+            active_sequence.setOutPoint(clip.end.seconds + half_frame)
+            logger.info(f'导出 {clip.name} 入点={active_sequence.getInPoint()} '
+                        f'出点={active_sequence.getOutPoint()}')
             result = active_sequence.exportAsMediaDirect(output_file, preset_file, 1)
             if result == 'No Error':
                 self.info_broad.add_line(f'导出完成 {output_file}')
@@ -125,16 +142,22 @@ class PRToolsUI(CommonToolWidget):
         active_sequence.setOutPoint(original_out)
 
     def get_name_list(self, total_num):
-        start_name = self.rename_start_input.text()
+        start_name = self.rename_start_input.text().strip()
         interval_num = self.interval_num_box.value()
-        try:
-            start_num = int(start_name)
-        except ValueError:
+
+        # 取末尾连续的数字作为递增部分，前面的内容原样作为前缀，
+        # 这样 0010、s0010、ep01_sh0010 这几种写法都能用
+        match = re.match(r'^(.*?)(\d+)$', start_name)
+        if not match:
+            self.info_broad.add_line(f'[error]起始镜号需要以数字结尾，如 0010 或 s0010，当前为 {start_name}')
             return []
+
+        prefix, digits = match.groups()
+        start_num = int(digits)
         name_list = []
         for i in range(total_num):
             num = start_num + i * interval_num
-            name = f"{num:0{len(start_name)}d}"
+            name = f'{prefix}{num:0{len(digits)}d}'
             name_list.append(name)
         return name_list
 
