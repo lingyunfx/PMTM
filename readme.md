@@ -72,11 +72,18 @@ dayu_widgets 和 dayu_path 有几处问题需要修正。
 
 ### 资源路径
 代码中的资源引用都是 `./resource/xxx` 这种相对路径，`pmtm.run()` 启动时会先切换到项目根目录
-（打包后则是 exe 所在目录），所以在任意路径下执行 `uv run pmtm` 都能正常找到资源文件。
+（打包后则是 PyInstaller 解压资源的临时目录），所以在任意路径下执行 `uv run pmtm` 都能正常找到资源文件。
+
+### 版本号
+版本号只在 `pmtm/constant.py` 的 `VERSION` 里维护，`pyproject.toml` 通过 hatchling 动态读取，
+发版时改一处就够了。
 
 ### 打包
 ```shell
 uv sync --all-groups
-uv run pyinstaller main.py -i app.ico --hidden-import=PySide2 --hidden-import=PySide2.QtSvg --onefile -p .
+uv run pyinstaller main.py -n PMTM -i app.ico --onefile -p . --add-data "resource;resource" --collect-data dayu_widgets --hidden-import=PySide2 --hidden-import=PySide2.QtSvg --noconfirm
 ```
-打包完成后，需要把 `resource` 目录放到生成的 exe 同级目录下。
+产物是 `dist/PMTM.exe`。`resource` 目录和 dayu_widgets 自带的静态文件都已经打进 exe，
+单个文件就能分发，不需要再往旁边拷贝资源目录。
+
+注意 `--add-data` 的路径分隔符在 Windows 上是 `;`，macOS/Linux 上是 `:`。

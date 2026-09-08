@@ -1,6 +1,6 @@
 [project]
 name = "pmtm"
-version = "1.9.1"
+dynamic = ["version"]
 description = "PM TimeMachine，为视效行业制片准备的小工具集"
 readme = "readme.md"
 requires-python = ">=3.10,<3.11"
@@ -30,6 +30,10 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+# 版本号只维护 pmtm/constant.py 一处，这里动态读取
+path = "pmtm/constant.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["pmtm"]
