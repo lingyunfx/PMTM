@@ -50,11 +50,16 @@ class PRToolsUI(CommonToolWidget):
         self.export_dir_input.setMinimumWidth(350)
         self.output_ext_cb.addItems(['mp4','mov'])
 
-        if not self.preset_dir or not os.path.exists(self.preset_dir):
+        if not self.preset_dir:
             self.presets_cb.clear()
+        elif not os.path.isdir(self.preset_dir):
+            self.presets_cb.clear()
+            self.info_broad.add_line(f'[error]预设目录不存在 {self.preset_dir}')
         else:
             files = [f for f in os.listdir(self.preset_dir) if f.endswith('.epr')]
             self.presets_cb.addItems(files)
+            if not files:
+                self.info_broad.add_line(f'[error]预设目录下没有 .epr 预设文件 {self.preset_dir}')
 
     def connect_command(self):
         self.rename_bt.clicked.connect(self.run_rename)
@@ -95,9 +100,10 @@ class PRToolsUI(CommonToolWidget):
         # Windows 上输入 D:/tmp/out 时，os.path.join 会拼成 D:/tmp/out\xxx.mp4 导致导出失败
         output_folder = os.path.normpath(output_folder)
 
+        # 未获取到预设目录时 join 结果为空串，normpath 会变成 '.'，必须用 isfile 判断
         preset_file = os.path.normpath(os.path.join(self.preset_dir, self.presets_cb.currentText()))
 
-        if not preset_file or not os.path.exists(preset_file):
+        if not self.presets_cb.currentText() or not os.path.isfile(preset_file):
             self.info_broad.add_line(f'[error]预设文件不存在 {preset_file}')
             return
 
