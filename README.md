@@ -66,9 +66,9 @@ dayu_widgets 和 dayu_path 有几处问题需要修正。
 ### 打包
 ```shell
 uv sync --all-groups
-uv run pyinstaller main.py -n PMTM -i app.ico --onefile -p . --add-data "resource;resource" --collect-data dayu_widgets --hidden-import=PySide2 --hidden-import=PySide2.QtSvg --noconfirm
+uv run pyinstaller main.py -n PMTimeMachine -i app.ico --onefile -p . --add-data "resource;resource" --collect-data dayu_widgets --hidden-import=PySide2 --hidden-import=PySide2.QtSvg --noconfirm
 ```
-产物是 `dist/PMTM.exe`。项目里的 `resource` 目录和 dayu_widgets 自带的静态文件都已经打进 exe，
+产物是 `dist/PMTimeMachine.exe`。项目里的 `resource` 目录和 dayu_widgets 自带的静态文件都已经打进 exe，
 分发时单个文件就够，不用再往 exe 旁边拷贝资源目录。
 
 注意打包只是把 `resource` 复制了一份进 exe，项目里的这个目录不能删：
