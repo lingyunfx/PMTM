@@ -3,7 +3,9 @@ import subprocess as sp
 import tempfile
 
 from pmtm.core import user_setting, logger
-from pmtm.helper import get_resource_file
+
+# 使用系统自带的微软雅黑，不随项目打包（体积大且不允许再分发）
+FONT_FILE = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts', 'msyh.ttc')
 
 
 # -----------------------图像处理--------------------------------
@@ -56,8 +58,7 @@ def run_add_text_to_image(image_file, output_image_file, text, color, size, grav
     为图片添加文字，文字在图片底部中心位置
     """
     magick = user_setting.get('magick')
-    font_file = get_resource_file('msyh.ttf')
-    cmd = f'"{magick}" convert "{image_file}" -font {font_file} -gravity {gravity} -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -gamma {gamma} "{output_image_file}"'
+    cmd = f'"{magick}" convert "{image_file}" -font {FONT_FILE} -gravity {gravity} -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -gamma {gamma} "{output_image_file}"'
     logger.debug(f'执行命令: {cmd}')
     sp.run(cmd, shell=True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
@@ -68,13 +69,12 @@ def run_add_text_to_collage_image(output_image_file, data_list, horizontal_count
     data_list: example [{'text': '', 'color': '', 'file_path': ''}]
     """
     magick = user_setting.get('magick')
-    font_file = get_resource_file('msyh.ttf')
     cmd = f'{magick} montage ^ '
     for data in data_list:
         file_path = data['file_path']
         text = data['text']
         color = data['color']
-        cmd += f'( {file_path} -font {font_file} -gravity {gravity} -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -gamma {gamma} ) ^ '
+        cmd += f'( {file_path} -font {FONT_FILE} -gravity {gravity} -pointsize {size} -fill "{color}" -annotate +0+10 "{text}" -gamma {gamma} ) ^ '
 
     cmd += f'-tile {horizontal_count}x{vertical_count} -geometry +0+0 -background black "{output_image_file}"'
     logger.debug(f'执行命令: {cmd}')
