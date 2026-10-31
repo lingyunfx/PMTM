@@ -23,7 +23,9 @@ pmtm = "pmtm:run"
 
 [dependency-groups]
 dev = [
-    "pyinstaller>=6.0",
+    "nuitka>=4.3.3",
+    "ordered-set>=4.1",
+    "zstandard>=0.23",
     "types-pyside2==5.15.2.1.7",
 ]
 
